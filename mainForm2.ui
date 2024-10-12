@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>605</width>
+    <height>549</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QPushButton" name="AddButton">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>440</y>
+      <width>171</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Добавить</string>
+    </property>
+   </widget>
+   <widget class="QTableView" name="tableView">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>20</y>
+      <width>571</width>
+      <height>401</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="EditButton">
+    <property name="geometry">
+     <rect>
+      <x>200</x>
+      <y>440</y>
+      <width>171</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Редактировать</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="DeleteButton">
+    <property name="geometry">
+     <rect>
+      <x>390</x>
+      <y>440</y>
+      <width>171</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Удалить</string>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>605</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="FuchersBar">
+    <property name="title">
+     <string>Фьючерсы</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="TableBar">
+    <property name="title">
+     <string>Таблицы</string>
+    </property>
+    <addaction name="Statistika"/>
+    <addaction name="Kontrakti"/>
+    <addaction name="Union"/>
+   </widget>
+   <widget class="QMenu" name="CalcBar">
+    <property name="title">
+     <string>Расчёт</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="ReportBar">
+    <property name="title">
+     <string>Отчетность</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="HelpBar">
+    <property name="title">
+     <string>Справка</string>
+    </property>
+   </widget>
+   <addaction name="FuchersBar"/>
+   <addaction name="TableBar"/>
+   <addaction name="CalcBar"/>
+   <addaction name="ReportBar"/>
+   <addaction name="HelpBar"/>
+  </widget>
+  <action name="action_5">
+   <property name="text">
+    <string>Фт</string>
+   </property>
+  </action>
+  <action name="Statistika">
+   <property name="text">
+    <string>Статистика торгов</string>
+   </property>
+  </action>
+  <action name="Kontrakti">
+   <property name="text">
+    <string>Контраккты</string>
+   </property>
+  </action>
+  <action name="Union">
+   <property name="text">
+    <string>Объединение</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
