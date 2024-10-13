@@ -16,6 +16,7 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.setupUi(self)
         self.setWindowState(Qt.WindowState.WindowFullScreen)
 
+        db_name = 'Subd2.db'
 
         '''-------------------Пропорциональное размещение виджетов-------------------------------------------'''
         central_widget = QtWidgets.QWidget(self)
@@ -24,14 +25,22 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
 
         self.model = QStandardItemModel()
         self.tableView.setModel(self.model)
+        '''-----------------------------------------------------------------------------------------'''
+
+
+
 
         '''-------------------Привязка таблиц к виджету-------------------------------------------'''
-        self.kontrakti_data = self.get_table('Kontrakti')
-        self.statistics_data = self.get_table('Statistika')
+        self.kontrakti_data = self.get_table('Kontrakti', db_name)
+        self.statistics_data = self.get_table('Statistika', db_name)
 
-        self.Kontrakti.triggered.connect(lambda: self.load_table_from_db('Kontrakti'))
-        self.Statistika.triggered.connect(lambda: self.load_table_from_db('Statistika'))
-        self.Union.triggered.connect(self.to_update_or_create_union_table)
+        self.Kontrakti.triggered.connect(lambda: self.load_table_from_db('Kontrakti', db_name))
+        self.Statistika.triggered.connect(lambda: self.load_table_from_db('Statistika', db_name))
+        self.Union.triggered.connect(lambda: self.to_update_or_create_union_table(db_name))
+        '''-----------------------------------------------------------------------------------------'''
+
+
+
 
         '''-------------------Компоновка элементов главного окна-------------------------------------------'''
         # Создаем центральный виджет
@@ -47,17 +56,17 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.button_layout.addWidget(self.AddButton)
         self.button_layout.addWidget(self.DeleteButton)
         self.layout.addLayout(self.button_layout)
+        '''-----------------------------------------------------------------------------------------'''
 
 
-
-    def get_table(self, table_name):
-        conn = sqlite3.connect('Subd.db')
+    def get_table(self, table_name, db_name):
+        conn = sqlite3.connect(db_name)
         data = pd.read_sql_query(f"SELECT * FROM {table_name}", conn)
         conn.close()
         return data
-    def get_column_names(self, table_name):
+    def get_column_names(self, table_name, db_name):
         # Подключаемся к базе данных
-        conn = sqlite3.connect('Subd.db')
+        conn = sqlite3.connect(db_name)
 
         # Выполняем SQL-запрос для получения названий столбцов
         query = f"PRAGMA table_info({table_name})"
@@ -68,16 +77,16 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
 
         conn.close()
         return column_names
-    def to_update_or_create_union_table(self):
+    def to_update_or_create_union_table(self, db_name):
         # Объединяем данные
-        merged_data = pd.merge(self.kontrakti_data, self.statistics_data, on='name', how='outer')
+        merged_data = pd.merge(self.kontrakti_data, self.statistics_data, on='Название', how='outer')
 
         # Переименовываем столбцы для новой таблицы
-        merged_data.columns = ['name'] + [f'{col}' for col in self.get_column_names('Statistika') if col != 'name'] + \
-                              [f'{col}' for col in self.get_column_names('Kontrakti') if col != 'name']
+        merged_data.columns = ['Название'] + [f'{col}' for col in self.get_column_names('Statistika', db_name) if col != 'Название'] + \
+                              [f'{col}' for col in self.get_column_names('Kontrakti', db_name) if col != 'Название']
 
         # Сохраняем объединенные данные в новую таблицу
-        conn = sqlite3.connect('Subd.db')
+        conn = sqlite3.connect(db_name)
         cursor = conn.cursor()
         cursor.execute("DROP TABLE IF EXISTS Union_table")
         conn.commit()
@@ -85,10 +94,10 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
                            index=False)  # Если таблица существует, заменяем её
         conn.close()
         # Загружаем данные из новой таблицы в QTableWidget
-        self.load_table_from_db('Union_table')
-    def load_table_from_db(self, table_name):
+        self.load_table_from_db('Union_table', db_name)
+    def load_table_from_db(self, table_name, db_name):
         # Используем Pandas для загрузки данных
-        conn = sqlite3.connect('Subd.db')
+        conn = sqlite3.connect(db_name)
         data = pd.read_sql_query((f"SELECT * FROM {table_name}"), conn)
         conn.close()
         self.data_to_table(data)
@@ -105,9 +114,6 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
                 self.model.appendRow(items)
 
             self.tableView.setModel(self.model)
-
-
-#       '''-------------------Привязка таблиц к виджету-------------------------------------------'''
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
