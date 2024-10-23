@@ -17,6 +17,7 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.setWindowState(Qt.WindowState.WindowFullScreen)
 
         db_name = 'Subd2.db'
+        self.table_name = None
 
         '''-------------------Пропорциональное размещение виджетов-------------------------------------------'''
         central_widget = QtWidgets.QWidget(self)
@@ -25,20 +26,21 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
 
         self.model = QStandardItemModel()
         self.tableView.setModel(self.model)
+        self.tableView.hideColumn(0)
         '''-----------------------------------------------------------------------------------------'''
 
 
 
 
         '''-------------------Привязка таблиц к виджету-------------------------------------------'''
-        # self.kontrakti_data = self.get_table('Kontrakti', db_name)
-        # self.statistics_data = self.get_table('Statistika', db_name)
+        self.kontrakti_data = self.get_table('contractss', db_name)
+        self.statistics_data = self.get_table('Statistika', db_name)
 
-        self.Kontrakti.triggered.connect(lambda: self.load_table_from_db('Kontrakti', db_name))
+        self.Kontrakti.triggered.connect(lambda: self.load_table_from_db('contractss', db_name))
         self.Statistika.triggered.connect(lambda: self.load_table_from_db('Statistika', db_name))
         self.Union.triggered.connect(lambda: self.to_update_or_create_union_table(db_name))
         '''-----------------------------------------------------------------------------------------'''
-
+        
 
 
 
@@ -60,6 +62,7 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
 
         self.tableView.setFocus()
         self.layout.addWidget(self.tableView)
+        
 
         # Метка для отображения типа формы
         self.formTypeLabel = QtWidgets.QLabel("", self)
@@ -115,12 +118,17 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         selectedIndexes = self.tableView.selectionModel().selectedRows()
         if not selectedIndexes:
             return
-
         index = selectedIndexes[0].row()
-        self.nameEdit.setText(self.model.item(index, 0).text())
-        self.codeEdit.setText(self.model.item(index, 1).text())
-        self.dateEdit.setDate(QDate.fromString(self.model.item(index, 2).text(), "dd-MMM-yy"))
-        self.idEdit.setText(self.model.item(index, 3).text())
+        # print(self.model.item(index, 0).text())
+        print(self.model.item(index, 0).text())
+        print(self.model.item(index, 1).text())
+        print(self.model.item(index, 2).text())
+        print(self.model.item(index, 3).text())
+        print("_________________________")
+        self.nameEdit.setText(self.model.item(index, 1).text())
+        self.codeEdit.setText(self.model.item(index, 2).text())
+        self.dateEdit.setDate(QDate.fromString(self.model.item(index, 3).text(), "dd-MMM-yy"))
+        self.idEdit.setText(self.model.item(index, 0).text())
         self.formWidget.show()
         self.formTypeLabel.setText("Редактирование записи")
         self.formTypeLabel.show()
@@ -163,11 +171,12 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
     
     def saveRecord(self):
         db_name = 'Subd2.db' # ----------------
-        table_name = 'Kontrakti' 
+        table_name = 'contractss' 
         name = self.nameEdit.text()
         code = self.codeEdit.text()
-        id = int(self.idEdit.text())
-        print(id,type(id))
+        if self.currentRow != None:
+            id = int(self.idEdit.text())
+            
         date = self.dateEdit.date().toString("dd-MMM-yy")
 
         if not self.validateInput(name, code):
@@ -178,20 +187,23 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         cursor = conn.cursor()
 
         if self.currentRow is None:
-            cursor.execute(f"INSERT INTO {table_name} (name, code, date) VALUES (?, ?, ?)", (name, code, date))
+            cursor.execute(f"INSERT INTO {table_name} (name, base, exec_date) VALUES (?, ?, ?)", (name, code, date))
+            new_id = cursor.lastrowid
             self.model.insertRow(0, [
+                QStandardItem(new_id),
                 QStandardItem(name),
                 QStandardItem(code),
                 QStandardItem(date)
             ])
             self.tableView.selectRow(0)
         else:
-            cursor.execute(f"UPDATE {table_name} SET Название=?, Код=?, Дата_Исполнения=? WHERE id=?", (name, code, date, id))
-            self.model.setItem(self.currentRow, 0, QStandardItem(name))
-            self.model.setItem(self.currentRow, 1, QStandardItem(code))
+            cursor.execute(f"UPDATE {table_name} SET name=?, base=?, exec_date=? WHERE id=?", (name, code, date, id))
+            # self.model.setItem(self.currentRow, 0, QStandardItem(name))
+            self.model.setItem(self.currentRow, 1, QStandardItem(name))
             self.model.setItem(self.currentRow, 2, QStandardItem(date))
             self.model.setItem(self.currentRow, 3, QStandardItem(str(id)))
             self.tableView.selectRow(self.currentRow)
+            
 
         conn.commit()
         conn.close()
@@ -213,44 +225,50 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         return True     
 
     # Подтверждение удаления
-    def confirmAndDeleteSelectedRows(self):
-        # Получаем список выделенных строк
-        selectionModel = self.tableView.selectionModel()
-        selectedRows = selectionModel.selectedRows()
+    # def confirmAndDeleteSelectedRows(self):
+    #     # Получаем список выделенных строк
+    #     selectionModel = self.tableView.selectionModel()
+    #     selectedRows = selectionModel.selectedRows()
 
-        if not selectedRows:
-            return
+    #     if not selectedRows:
+    #         return
 
-        # Получаем список индексов выделенных строк
-        rowIndices = sorted(index.row() for index in selectedRows)
-        # Формируем строку с диапазонами для отображения
-        ranges = self.formatRanges(rowIndices)
+    #     # Получаем список индексов выделенных строк
+    #     rowIndices = sorted(index.row() for index in selectedRows)
+    #     # Формируем строку с диапазонами для отображения
+    #     ranges = self.formatRanges(rowIndices)
         
 
-        # Показываем окно подтверждения
-        reply = QtWidgets.QMessageBox.question(
-            self,
-            "Подтверждение удаления",
-            f"Вы уверены, что хотите удалить следующие строки: {ranges}?",
-            QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No
-        )
+    #     # Показываем окно подтверждения
+    #     reply = QtWidgets.QMessageBox.question(
+    #         self,
+    #         "Подтверждение удаления",
+    #         f"Вы уверены, что хотите удалить следующие строки: {ranges}?",
+    #         QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No
+    #     )
 
-        if reply == QtWidgets.QMessageBox.StandardButton.Yes:
-            # Удаляем строки, начиная с последней, чтобы не нарушать индексы
-            for index in reversed(rowIndices):
-                self.model.removeRow(index)
+    #     if reply == QtWidgets.QMessageBox.StandardButton.Yes:
+    #         # Удаляем строки, начиная с последней, чтобы не нарушать индексы
+    #         for index in reversed(rowIndices):
+    #             self.model.removeRow(index)
 
 
     def confirmAndDeleteSelectedRows(self): # ----------------
         db_name = 'Subd2.db' # ----------------
-        table_name = 'Kontrakti'
-        selectionModel = self.tableView.selectionModel()
-        selectedRows = selectionModel.selectedRows()
+        table_name = 'contractss'
+        # selectionModel = self.tableView.selectionModel()
+        # selectedRows = selectionModel.selectedRows()
+        selectedRows = self.tableView.selectionModel().selectedRows()
+        
+        ids = [self.model.item(index.row(), 0).text() for index in selectedRows]
+        # print(selectedRows[0].model)
 
-        if not selectedRows:
-            return
+        # if not selectedRows:
+        #     return
 
         rowIndices = sorted(index.row() for index in selectedRows)
+        print(rowIndices)
+        # ids = [self.model.data(index.siblingAtColumn(0)) for index in selectedRows]
         ranges = self.formatRanges(rowIndices)
 
         reply = QtWidgets.QMessageBox.question(
@@ -263,9 +281,12 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         if reply == QtWidgets.QMessageBox.StandardButton.Yes:
             conn = sqlite3.connect(db_name)
             cursor = conn.cursor()
-            for index in reversed(rowIndices):
-                cursor.execute(f"DELETE FROM {table_name} WHERE id=?", (index + 1,))
-                self.model.removeRow(index)
+            for index in ids:
+                cursor.execute(f"DELETE FROM {table_name} WHERE id=?", (index,))
+                # self.model.removeRow(index)
+
+            for i in reversed(rowIndices):
+                self.model.removeRow(i)
             conn.commit()
             conn.close()            
 
@@ -335,6 +356,7 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.load_table_from_db('Union_table', db_name)
 
     def load_table_from_db(self, table_name, db_name):
+        self.table_name = table_name
         # Используем Pandas для загрузки данных
         conn = sqlite3.connect(db_name)
         data = pd.read_sql_query((f"SELECT * FROM {table_name}"), conn)
@@ -351,9 +373,14 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
             # Заполняем модель данными
             for row_index, row_data in data.iterrows():
                 items = [QStandardItem(str(item)) for item in row_data]
-                self.model.appendRow(items)
+                self.model.insertRow(0,items)
+
+            # for row_index, row_data in data.iterrows():
+            #     items = [QStandardItem(str(item)) for item in row_data]
+            #     self.model.appendRow(items)
 
             self.tableView.setModel(self.model)
+            self.tableView.hideColumn(0)
 
     def toggleButtons(self, show):
         self.EditButton.setVisible(show)

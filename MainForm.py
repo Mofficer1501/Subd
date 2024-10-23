@@ -13,49 +13,68 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(605, 549)
+
         self.centralwidget = QtWidgets.QWidget(parent=MainWindow)
         self.centralwidget.setObjectName("centralwidget")
+
         self.AddButton = QtWidgets.QPushButton(parent=self.centralwidget)
         self.AddButton.setGeometry(QtCore.QRect(10, 440, 171, 51))
         self.AddButton.setObjectName("AddButton")
+
         self.tableView = QtWidgets.QTableView(parent=self.centralwidget)
         self.tableView.setGeometry(QtCore.QRect(10, 20, 571, 401))
         self.tableView.setObjectName("tableView")
+
         self.EditButton = QtWidgets.QPushButton(parent=self.centralwidget)
         self.EditButton.setGeometry(QtCore.QRect(200, 440, 171, 51))
         self.EditButton.setObjectName("EditButton")
+
         self.DeleteButton = QtWidgets.QPushButton(parent=self.centralwidget)
         self.DeleteButton.setGeometry(QtCore.QRect(390, 440, 171, 51))
         self.DeleteButton.setObjectName("DeleteButton")
+
         MainWindow.setCentralWidget(self.centralwidget)
         self.statusbar = QtWidgets.QStatusBar(parent=MainWindow)
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
+
         self.menubar = QtWidgets.QMenuBar(parent=MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 605, 22))
         self.menubar.setObjectName("menubar")
+
         self.FuchersBar = QtWidgets.QMenu(parent=self.menubar)
-        self.FuchersBar.setObjectName("FuchersBar")
+        self.FuchersBar.setObjectName("FuchersBar"
+                                      )
         self.TableBar = QtWidgets.QMenu(parent=self.menubar)
         self.TableBar.setObjectName("TableBar")
+
         self.CalcBar = QtWidgets.QMenu(parent=self.menubar)
         self.CalcBar.setObjectName("CalcBar")
+
         self.ReportBar = QtWidgets.QMenu(parent=self.menubar)
         self.ReportBar.setObjectName("ReportBar")
+
         self.HelpBar = QtWidgets.QMenu(parent=self.menubar)
         self.HelpBar.setObjectName("HelpBar")
+
         MainWindow.setMenuBar(self.menubar)
+
         self.action_5 = QtGui.QAction(parent=MainWindow)
         self.action_5.setObjectName("action_5")
+
         self.Statistika = QtGui.QAction(parent=MainWindow)
         self.Statistika.setObjectName("Statistika")
+
         self.Kontrakti = QtGui.QAction(parent=MainWindow)
         self.Kontrakti.setObjectName("Kontrakti")
+
         self.Union = QtGui.QAction(parent=MainWindow)
         self.Union.setObjectName("Union")
+
         self.TableBar.addAction(self.Statistika)
         self.TableBar.addAction(self.Kontrakti)
         self.TableBar.addAction(self.Union)
+        
         self.menubar.addAction(self.FuchersBar.menuAction())
         self.menubar.addAction(self.TableBar.menuAction())
         self.menubar.addAction(self.CalcBar.menuAction())
