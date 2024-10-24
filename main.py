@@ -17,6 +17,7 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.setWindowState(Qt.WindowState.WindowFullScreen)
 
         db_name = 'Subd2.db'
+        
         self.table_name = None
 
         '''-------------------Пропорциональное размещение виджетов-------------------------------------------'''
@@ -29,19 +30,19 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.tableView.hideColumn(0)
         '''-----------------------------------------------------------------------------------------'''
 
-
+        # start_date, name, exec_date, price, min_price, max_price, contacts_quantity
 
 
         '''-------------------Привязка таблиц к виджету-------------------------------------------'''
         self.kontrakti_data = self.get_table('contractss', db_name)
-        self.statistics_data = self.get_table('Statistika', db_name)
+        self.statistics_data = self.get_table('stat', db_name)
 
         self.Kontrakti.triggered.connect(lambda: self.load_table_from_db('contractss', db_name))
-        self.Statistika.triggered.connect(lambda: self.load_table_from_db('Statistika', db_name))
+        self.Statistika.triggered.connect(lambda: self.load_table_from_db('stat', db_name))
         self.Union.triggered.connect(lambda: self.to_update_or_create_union_table(db_name))
         '''-----------------------------------------------------------------------------------------'''
         
-
+        
 
 
         '''-------------------Компоновка элементов главного окна-------------------------------------------'''
@@ -73,10 +74,20 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.formLayout = QtWidgets.QFormLayout()
         self.nameEdit = QtWidgets.QLineEdit()
         self.nameEdit.setInputMask("00000-0000")
+        self.priceEdit = QtWidgets.QLineEdit()
+        self.min_priceEdit = QtWidgets.QLineEdit()
+        self.max_priceEdit = QtWidgets.QLineEdit()
+        self.quantEdit = QtWidgets.QLineEdit()
+        
+        
         self.codeEdit = QtWidgets.QLineEdit()
         self.idEdit = QtWidgets.QLineEdit()
         self.dateEdit = QtWidgets.QDateEdit(calendarPopup=True)
         self.dateEdit.setDisplayFormat("dd-MMM-yy")
+
+        self.start_dateEdit = QtWidgets.QDateEdit(calendarPopup=True)
+        self.start_dateEdit.setDisplayFormat("dd-MMM-yy")
+
         self.saveButton = QtWidgets.QPushButton("Сохранить")
         self.saveButton.clicked.connect(self.saveRecord)
         self.formLayout.addRow("Название:", self.nameEdit)
@@ -115,20 +126,29 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
     #     self.currentRow = index
 
     def editRecord(self): # ----------------
+        print('table_name=',self.table_name)
         selectedIndexes = self.tableView.selectionModel().selectedRows()
         if not selectedIndexes:
             return
         index = selectedIndexes[0].row()
-        # print(self.model.item(index, 0).text())
-        print(self.model.item(index, 0).text())
-        print(self.model.item(index, 1).text())
-        print(self.model.item(index, 2).text())
-        print(self.model.item(index, 3).text())
-        print("_________________________")
-        self.nameEdit.setText(self.model.item(index, 1).text())
-        self.codeEdit.setText(self.model.item(index, 2).text())
-        self.dateEdit.setDate(QDate.fromString(self.model.item(index, 3).text(), "dd-MMM-yy"))
-        self.idEdit.setText(self.model.item(index, 0).text())
+
+        if self.table_name == 'contractss':
+            self.nameEdit.setText(self.model.item(index, 1).text())
+            self.codeEdit.setText(self.model.item(index, 2).text())
+            self.dateEdit.setDate(QDate.fromString(self.model.item(index, 3).text(), "dd-MMM-yy"))
+            self.idEdit.setText(self.model.item(index, 0).text()) 
+        elif self.table_name == 'stat':
+            self.nameEdit.setText(self.model.item(index, 1).text())
+            self.start_dateEdit.setDate(QDate.fromString(self.model.item(index, 2).text(), "dd-MMM-yy"))
+            self.dateEdit.setDate(QDate.fromString(self.model.item(index, 3).text(), "dd-MMM-yy"))
+            self.idEdit.setText(self.model.item(index, 0).text())
+            self.priceEdit.setText(self.model.item(index, 4).text())
+            self.min_priceEdit.setText(self.model.item(index, 5).text())
+            self.max_priceEdit.setText(self.model.item(index, 6).text())
+            self.quantEdit.setText(self.model.item(index, 7).text())
+        else :
+            return
+
         self.formWidget.show()
         self.formTypeLabel.setText("Редактирование записи")
         self.formTypeLabel.show()
@@ -139,6 +159,11 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
     # Добавление записи
     def addRecord(self):
         self.nameEdit.clear()
+        self.priceEdit.clear()
+        self.start_dateEdit.clear()
+        self.max_priceEdit.clear()
+        self.min_priceEdit.clear()
+        self.quantEdit.clear()
         self.codeEdit.clear()
         self.idEdit.clear()
         self.dateEdit.setDate(QDate.currentDate())
@@ -255,7 +280,7 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
 
     def confirmAndDeleteSelectedRows(self): # ----------------
         db_name = 'Subd2.db' # ----------------
-        table_name = 'contractss'
+        table_name = self.table_name
         # selectionModel = self.tableView.selectionModel()
         # selectedRows = selectionModel.selectedRows()
         selectedRows = self.tableView.selectionModel().selectedRows()
@@ -338,11 +363,11 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
     
     def to_update_or_create_union_table(self, db_name):
         # Объединяем данные
-        merged_data = pd.merge(self.kontrakti_data, self.statistics_data, on='Название', how='outer')
+        merged_data = pd.merge(self.kontrakti_data, self.statistics_data, on='name', how='outer')
 
         # Переименовываем столбцы для новой таблицы
-        merged_data.columns = ['Название'] + [f'{col}' for col in self.get_column_names('Statistika', db_name) if col != 'Название'] + \
-                              [f'{col}' for col in self.get_column_names('Kontrakti', db_name) if col != 'Название']
+        merged_data.columns = ['name'] + [f'{col}' for col in self.get_column_names('stat', db_name) if col != 'name'] + \
+                              [f'{col}' for col in self.get_column_names('contractss', db_name) if col != 'name']
 
         # Сохраняем объединенные данные в новую таблицу
         conn = sqlite3.connect(db_name)
@@ -360,6 +385,7 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         # Используем Pandas для загрузки данных
         conn = sqlite3.connect(db_name)
         data = pd.read_sql_query((f"SELECT * FROM {table_name}"), conn)
+        flag = table_name
         conn.close()
         self.data_to_table(data)
 
