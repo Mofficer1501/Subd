@@ -61,6 +61,8 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.tableView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
         self.tableView.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.MultiSelection)
 
+        self.tableView.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
+
         self.tableView.setFocus()
         self.layout.addWidget(self.tableView)
         
@@ -71,21 +73,23 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.formTypeLabel.hide()
 
         # Форма редактирования/создания
-        self.formLayout = QtWidgets.QFormLayout()
-        self.nameEdit = QtWidgets.QLineEdit()
-        self.nameEdit.setInputMask("00000-0000")
-        self.priceEdit = QtWidgets.QLineEdit()
-        self.min_priceEdit = QtWidgets.QLineEdit()
-        self.max_priceEdit = QtWidgets.QLineEdit()
-        self.quantEdit = QtWidgets.QLineEdit()
+        # self.formLayout = QtWidgets.QFormLayout()
+        # self.nameEdit = QtWidgets.QLineEdit()
+        # self.nameEdit.setInputMask("00000-0000")
+        # self.priceEdit = QtWidgets.QLineEdit()
+        # self.min_priceEdit = QtWidgets.QLineEdit()
+        # self.max_priceEdit = QtWidgets.QLineEdit()
+        # self.quantEdit = QtWidgets.QLineEdit()
         
-        self.codeEdit = QtWidgets.QLineEdit()
-        self.idEdit = QtWidgets.QLineEdit()
-        self.dateEdit = QtWidgets.QDateEdit(calendarPopup=True)
-        self.dateEdit.setDisplayFormat("dd-MMM-yy")
+        # self.codeEdit = QtWidgets.QLineEdit()
+        # self.idEdit = QtWidgets.QLineEdit()
+        # self.dateEdit = QtWidgets.QDateEdit(calendarPopup=True)
+        # self.dateEdit.setDisplayFormat("dd-MMM-yy")
 
-        self.start_dateEdit = QtWidgets.QDateEdit(calendarPopup=True)
-        self.start_dateEdit.setDisplayFormat("dd-MMM-yy")
+        # self.start_dateEdit = QtWidgets.QDateEdit(calendarPopup=True)
+        # self.start_dateEdit.setDisplayFormat("dd-MMM-yy")
+
+        # --------------------------------------------------------
 
         # self.saveButton = QtWidgets.QPushButton("Сохранить")
         # self.saveButton.clicked.connect(self.saveRecord)
@@ -108,7 +112,7 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         #     print(
         #         'hellow'
         #     )
-        # layot_setter()        
+        # open_popup()        
         # self.formWidget = QtWidgets.QWidget()
         # self.formWidget.setLayout(self.formLayout)
         # self.formWidget.hide()
@@ -125,9 +129,9 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         # self.layout.addWidget(self.formWidget)
         self.layout.addWidget(self.formTypeLabel)
         '''-----------------------------------------------------------------------------------------'''
-
+    
     def editRecord(self): # ----------------
-        self.layot_setter()
+        self.open_popup()
         print('table_name=',self.table_name)
         selectedIndexes = self.tableView.selectionModel().selectedRows()
         if not selectedIndexes:
@@ -154,13 +158,13 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.formWidget.show()
         self.formTypeLabel.setText("Редактирование записи")
         self.formTypeLabel.show()
-        self.toggleButtons(False)
+        # self.toggleButtons(False)
         self.currentRow = index
     
 
     # Добавление записи
     def addRecord(self):
-        self.layot_setter()
+        self.open_popup()
         self.nameEdit.clear()
         self.priceEdit.clear()
         self.start_dateEdit.clear()
@@ -170,13 +174,13 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.codeEdit.clear()
         self.idEdit.clear()
         self.dateEdit.setDate(QDate.currentDate())
-        self.formWidget.show()
+        # self.formWidget.show()
         self.currentRow = None
     
     def saveRecord(self):
         db_name = 'Subd2.db' # ----------------
         table_name = self.table_name 
-        self.layot_setter()
+        # self.open_popup()
         if table_name == 'contractss':
             name = self.nameEdit.text()
             code = self.codeEdit.text()
@@ -191,7 +195,7 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
             quant = self.quantEdit.text()
 
         if self.currentRow != None:
-            id = int(self.idEdit.text())
+            id = self.idEdit.text()
             
         
 
@@ -206,8 +210,9 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
             if table_name == 'contractss':
                 cursor.execute(f"INSERT INTO {table_name} (name, base, exec_date) VALUES (?, ?, ?)", (name, code, date))
                 new_id = cursor.lastrowid
+                print("newId=",new_id)
                 self.model.insertRow(0, [
-                    QStandardItem(new_id),
+                    QStandardItem(str(new_id)),
                     QStandardItem(name),
                     QStandardItem(code),
                     QStandardItem(date)
@@ -215,8 +220,9 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
             elif table_name == 'stat':
                 cursor.execute(f"INSERT INTO {table_name} (name, start_date, day_end,price,min_price,max_price,contracts_quantity) VALUES (?, ?, ?, ?, ?, ?,?)", (name, start_date, day_end,price,min_price,max_price,quant))
                 new_id = cursor.lastrowid
+                print("newId=",new_id)
                 self.model.insertRow(0, [
-                    QStandardItem(new_id),
+                    QStandardItem(str(new_id)),
                     QStandardItem(name),
                     QStandardItem(start_date),
                     QStandardItem(day_end),
@@ -230,6 +236,7 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         else:
             if table_name == 'contractss':
                 cursor.execute(f"UPDATE {table_name} SET name=?, base=?, exec_date=? WHERE id=?", (name, code, date, id))
+                print(id)
                 self.model.setItem(self.currentRow, 0, QStandardItem(id))
                 self.model.setItem(self.currentRow, 1, QStandardItem(name))
                 self.model.setItem(self.currentRow, 2, QStandardItem(code))
@@ -237,6 +244,7 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
                 self.tableView.selectRow(self.currentRow)
             elif table_name == 'stat':
                 cursor.execute(f"UPDATE {table_name} SET name=?, start_date=?, day_end=?, price=?, min_price=?, max_price=?,contracts_quantity=? WHERE id=?", (name, start_date, day_end,price,min_price,max_price,quant, id))
+                print(id)
                 self.model.setItem(self.currentRow, 0, QStandardItem(id))
                 self.model.setItem(self.currentRow, 1, QStandardItem(name))
                 self.model.setItem(self.currentRow, 2, QStandardItem(start_date))
@@ -249,20 +257,50 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
             
         conn.commit()
         conn.close()
-
+        
+        self.nameEdit.clear()
+        self.priceEdit.clear()
+        self.start_dateEdit.clear()
+        self.max_priceEdit.clear()
+        self.min_priceEdit.clear()
+        self.quantEdit.clear()
+        self.codeEdit.clear()
+        self.idEdit.clear()
+        self.dateEdit.clear()
+        # self.formWidget.show()
+        self.currentRow = None
+        self.formWidget.reject()
         QtWidgets.QMessageBox.information(self, "Сохранено", "Запись успешно сохранена.")
-        self.formWidget.hide()
-        self.formTypeLabel.hide()
-        self.toggleButtons(True)
+        # self.formWidget.hide()
+        # self.formTypeLabel.hide()
+        # self.toggleButtons(True)
+        # self.formWidget.setParent(None)
+        # self.layout.removeWidget(self.formWidget)
 
-    def layot_setter(self):
-        self.saveButton = QtWidgets.QPushButton("Сохранить")
-        self.saveButton.clicked.connect(self.saveRecord)
+    def open_popup(self):
+        # self.saveButton = QtWidgets.QPushButton("Сохранить")
+        # self.saveButton.clicked.connect(self.saveRecord)
+        self.formLayout = QtWidgets.QFormLayout()
+        self.nameEdit = QtWidgets.QLineEdit()
+        self.nameEdit.setInputMask("00000-0000")
+        self.priceEdit = QtWidgets.QLineEdit()
+        self.min_priceEdit = QtWidgets.QLineEdit()
+        self.max_priceEdit = QtWidgets.QLineEdit()
+        self.quantEdit = QtWidgets.QLineEdit()
+        
+        self.codeEdit = QtWidgets.QLineEdit()
+        self.idEdit = QtWidgets.QLineEdit()
+        self.dateEdit = QtWidgets.QDateEdit(calendarPopup=True)
+        self.dateEdit.setDisplayFormat("dd-MMM-yy")
+
+        self.start_dateEdit = QtWidgets.QDateEdit(calendarPopup=True)
+        self.start_dateEdit.setDisplayFormat("dd-MMM-yy")
+
         if self.table_name == 'contractss':
             self.formLayout.addRow("Название:", self.nameEdit)
             self.formLayout.addRow("Код:", self.codeEdit)
             self.formLayout.addRow("Дата исполнения:", self.dateEdit)
-            self.formLayout.addRow(self.saveButton)
+            # self.formLayout.addRow(self.saveButton)
         elif self.table_name == 'stat':
             self.formLayout.addRow("Название:", self.nameEdit)
             self.formLayout.addRow("Дата начала:", self.start_dateEdit)
@@ -271,11 +309,19 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
             self.formLayout.addRow("Минимальная цена:", self.min_priceEdit)
             self.formLayout.addRow("Максимальная цена:", self.max_priceEdit)
             self.formLayout.addRow("Количество:", self.quantEdit)
-            self.formLayout.addRow(self.saveButton)
-        self.formWidget = QtWidgets.QWidget()
+            # self.formLayout.addRow(self.saveButton)
+        self.formWidget = QtWidgets.QDialog()
+        buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Ok | QtWidgets.QDialogButtonBox.StandardButton.Cancel)
+        self.formLayout.addRow(buttonBox)
+        buttonBox.accepted.connect(self.saveRecord)
+        buttonBox.rejected.connect(self.formWidget.reject)
+        # self.formWidget = QtWidgets.QWidget()
+        
+
         self.formWidget.setLayout(self.formLayout)
-        self.formWidget.hide()
-        self.layout.addWidget(self.formWidget)
+        self.formWidget.open()
+        # self.formWidget.hide()
+        # self.layout.addWidget(self.formWidget)
         return 
     # Валидация ввода
     def validateInput(self, name, code):
@@ -455,7 +501,7 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
             #     self.model.appendRow(items)
 
             self.tableView.setModel(self.model)
-            self.tableView.hideColumn(0)
+            # self.tableView.hideColumn(0) # Раскоментировать при production
 
     def toggleButtons(self, show):
         self.EditButton.setVisible(show)
