@@ -39,7 +39,7 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
 
         self.Kontrakti.triggered.connect(lambda: self.load_table_from_db('contractss', db_name))
         self.Statistika.triggered.connect(lambda: self.load_table_from_db('stat', db_name))
-        self.Union.triggered.connect(lambda: self.to_update_or_create_union_table(db_name))
+        self.Union.triggered.connect(lambda: self.update_summary_table(db_name))
         '''-----------------------------------------------------------------------------------------'''
         
         
@@ -79,7 +79,6 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.max_priceEdit = QtWidgets.QLineEdit()
         self.quantEdit = QtWidgets.QLineEdit()
         
-        
         self.codeEdit = QtWidgets.QLineEdit()
         self.idEdit = QtWidgets.QLineEdit()
         self.dateEdit = QtWidgets.QDateEdit(calendarPopup=True)
@@ -88,15 +87,31 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.start_dateEdit = QtWidgets.QDateEdit(calendarPopup=True)
         self.start_dateEdit.setDisplayFormat("dd-MMM-yy")
 
-        self.saveButton = QtWidgets.QPushButton("Сохранить")
-        self.saveButton.clicked.connect(self.saveRecord)
-        self.formLayout.addRow("Название:", self.nameEdit)
-        self.formLayout.addRow("Код:", self.codeEdit)
-        self.formLayout.addRow("Дата исполнения:", self.dateEdit)
-        self.formLayout.addRow(self.saveButton)
-        self.formWidget = QtWidgets.QWidget()
-        self.formWidget.setLayout(self.formLayout)
-        self.formWidget.hide()
+        # self.saveButton = QtWidgets.QPushButton("Сохранить")
+        # self.saveButton.clicked.connect(self.saveRecord)
+
+        # if self.table_name == 'contractss':
+        #     self.formLayout.addRow("Название:", self.nameEdit)
+        #     self.formLayout.addRow("Код:", self.codeEdit)
+        #     self.formLayout.addRow("Дата исполнения:", self.dateEdit)
+        #     self.formLayout.addRow(self.saveButton)
+        # elif self.table_name == 'stat':
+        #     self.formLayout.addRow("Название:", self.nameEdit)
+        #     self.formLayout.addRow("Дата начала:", self.start_dateEdit)
+        #     self.formLayout.addRow("Дата исполнения:", self.dateEdit)
+        #     self.formLayout.addRow("Цена:", self.priceEdit)
+        #     self.formLayout.addRow("Минимальная цена:", self.min_priceEdit)
+        #     self.formLayout.addRow("Максимальная цена:", self.max_priceEdit)
+        #     self.formLayout.addRow("Количество:", self.quantEdit)
+        #     self.formLayout.addRow(self.saveButton)
+        # else :
+        #     print(
+        #         'hellow'
+        #     )
+        # layot_setter()        
+        # self.formWidget = QtWidgets.QWidget()
+        # self.formWidget.setLayout(self.formLayout)
+        # self.formWidget.hide()
 
         # Кнопки
         self.button_layout = QtWidgets.QHBoxLayout()
@@ -107,25 +122,12 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.EditButton.clicked.connect(self.editRecord)
         self.AddButton.clicked.connect(self.addRecord)
         self.layout.addLayout(self.button_layout)
-        self.layout.addWidget(self.formWidget)
+        # self.layout.addWidget(self.formWidget)
         self.layout.addWidget(self.formTypeLabel)
         '''-----------------------------------------------------------------------------------------'''
 
-
-    # Редактирование записи
-    # def editRecord(self):
-    #     selectedIndexes = self.tableView.selectionModel().selectedRows()
-    #     if not selectedIndexes:
-    #         return
-
-    #     index = selectedIndexes[0].row()
-    #     self.nameEdit.setText(self.model.item(index, 0).text())
-    #     self.codeEdit.setText(self.model.item(index, 1).text())
-    #     self.dateEdit.setDate(QDate.fromString(self.model.item(index, 2).text(), "dd-MM-yy"))
-    #     self.formWidget.show()
-    #     self.currentRow = index
-
     def editRecord(self): # ----------------
+        self.layot_setter()
         print('table_name=',self.table_name)
         selectedIndexes = self.tableView.selectionModel().selectedRows()
         if not selectedIndexes:
@@ -158,6 +160,7 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
 
     # Добавление записи
     def addRecord(self):
+        self.layot_setter()
         self.nameEdit.clear()
         self.priceEdit.clear()
         self.start_dateEdit.clear()
@@ -169,67 +172,81 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.dateEdit.setDate(QDate.currentDate())
         self.formWidget.show()
         self.currentRow = None
-
-    # Сохранение записи
-    # def saveRecord(self):
-    #     name = self.nameEdit.text()
-    #     code = self.codeEdit.text()
-    #     date = self.dateEdit.date().toString("dd-MM-yy")
-
-    #     if not self.validateInput(name, code):
-    #         QtWidgets.QMessageBox.warning(self, "Ошибка", "Некорректный ввод данных.")
-    #         return
-
-    #     if self.currentRow is None:
-    #         self.model.appendRow([
-    #             QStandardItem(name),
-    #             QStandardItem(code),
-    #             QStandardItem(date)
-    #         ])
-    #     else:
-    #         self.model.setItem(self.currentRow, 0, QStandardItem(name))
-    #         self.model.setItem(self.currentRow, 1, QStandardItem(code))
-    #         self.model.setItem(self.currentRow, 2, QStandardItem(date))
-
-    #     QtWidgets.QMessageBox.information(self, "Сохранено", "Запись успешно сохранена.")
-    #     self.formWidget.hide()   
     
     def saveRecord(self):
         db_name = 'Subd2.db' # ----------------
-        table_name = 'contractss' 
-        name = self.nameEdit.text()
-        code = self.codeEdit.text()
+        table_name = self.table_name 
+        self.layot_setter()
+        if table_name == 'contractss':
+            name = self.nameEdit.text()
+            code = self.codeEdit.text()
+            date = self.dateEdit.date().toString("dd-MMM-yy")
+        elif table_name == 'stat':
+            name = self.nameEdit.text()   
+            start_date = self.start_dateEdit.text()
+            day_end = self.dateEdit.text()
+            price = self.priceEdit.text()
+            min_price = self.min_priceEdit.text()
+            max_price = self.max_priceEdit.text()
+            quant = self.quantEdit.text()
+
         if self.currentRow != None:
             id = int(self.idEdit.text())
             
-        date = self.dateEdit.date().toString("dd-MMM-yy")
+        
 
-        if not self.validateInput(name, code):
-            QtWidgets.QMessageBox.warning(self, "Ошибка", "Некорректный ввод данных.")
-            return
+        # if not self.validateInput(name, code):
+        #     QtWidgets.QMessageBox.warning(self, "Ошибка", "Некорректный ввод данных.")
+        #     return
 
         conn = sqlite3.connect(db_name)
         cursor = conn.cursor()
 
         if self.currentRow is None:
-            cursor.execute(f"INSERT INTO {table_name} (name, base, exec_date) VALUES (?, ?, ?)", (name, code, date))
-            new_id = cursor.lastrowid
-            self.model.insertRow(0, [
-                QStandardItem(new_id),
-                QStandardItem(name),
-                QStandardItem(code),
-                QStandardItem(date)
-            ])
+            if table_name == 'contractss':
+                cursor.execute(f"INSERT INTO {table_name} (name, base, exec_date) VALUES (?, ?, ?)", (name, code, date))
+                new_id = cursor.lastrowid
+                self.model.insertRow(0, [
+                    QStandardItem(new_id),
+                    QStandardItem(name),
+                    QStandardItem(code),
+                    QStandardItem(date)
+                ])
+            elif table_name == 'stat':
+                cursor.execute(f"INSERT INTO {table_name} (name, start_date, day_end,price,min_price,max_price,contracts_quantity) VALUES (?, ?, ?, ?, ?, ?,?)", (name, start_date, day_end,price,min_price,max_price,quant))
+                new_id = cursor.lastrowid
+                self.model.insertRow(0, [
+                    QStandardItem(new_id),
+                    QStandardItem(name),
+                    QStandardItem(start_date),
+                    QStandardItem(day_end),
+                    QStandardItem(price),
+                    QStandardItem(min_price),
+                    QStandardItem(max_price),
+                    QStandardItem(quant)
+                ])
+                print('stat')   
             self.tableView.selectRow(0)
         else:
-            cursor.execute(f"UPDATE {table_name} SET name=?, base=?, exec_date=? WHERE id=?", (name, code, date, id))
-            # self.model.setItem(self.currentRow, 0, QStandardItem(name))
-            self.model.setItem(self.currentRow, 1, QStandardItem(name))
-            self.model.setItem(self.currentRow, 2, QStandardItem(date))
-            self.model.setItem(self.currentRow, 3, QStandardItem(str(id)))
-            self.tableView.selectRow(self.currentRow)
+            if table_name == 'contractss':
+                cursor.execute(f"UPDATE {table_name} SET name=?, base=?, exec_date=? WHERE id=?", (name, code, date, id))
+                self.model.setItem(self.currentRow, 0, QStandardItem(id))
+                self.model.setItem(self.currentRow, 1, QStandardItem(name))
+                self.model.setItem(self.currentRow, 2, QStandardItem(code))
+                self.model.setItem(self.currentRow, 3, QStandardItem(date))
+                self.tableView.selectRow(self.currentRow)
+            elif table_name == 'stat':
+                cursor.execute(f"UPDATE {table_name} SET name=?, start_date=?, day_end=?, price=?, min_price=?, max_price=?,contracts_quantity=? WHERE id=?", (name, start_date, day_end,price,min_price,max_price,quant, id))
+                self.model.setItem(self.currentRow, 0, QStandardItem(id))
+                self.model.setItem(self.currentRow, 1, QStandardItem(name))
+                self.model.setItem(self.currentRow, 2, QStandardItem(start_date))
+                self.model.setItem(self.currentRow, 3, QStandardItem(day_end))
+                self.model.setItem(self.currentRow, 4, QStandardItem(price))
+                self.model.setItem(self.currentRow, 5, QStandardItem(min_price))
+                self.model.setItem(self.currentRow, 6, QStandardItem(max_price))
+                self.model.setItem(self.currentRow, 7, QStandardItem(quant))
+                self.tableView.selectRow(self.currentRow)  
             
-
         conn.commit()
         conn.close()
 
@@ -238,7 +255,28 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.formTypeLabel.hide()
         self.toggleButtons(True)
 
-
+    def layot_setter(self):
+        self.saveButton = QtWidgets.QPushButton("Сохранить")
+        self.saveButton.clicked.connect(self.saveRecord)
+        if self.table_name == 'contractss':
+            self.formLayout.addRow("Название:", self.nameEdit)
+            self.formLayout.addRow("Код:", self.codeEdit)
+            self.formLayout.addRow("Дата исполнения:", self.dateEdit)
+            self.formLayout.addRow(self.saveButton)
+        elif self.table_name == 'stat':
+            self.formLayout.addRow("Название:", self.nameEdit)
+            self.formLayout.addRow("Дата начала:", self.start_dateEdit)
+            self.formLayout.addRow("Дата исполнения:", self.dateEdit)
+            self.formLayout.addRow("Цена:", self.priceEdit)
+            self.formLayout.addRow("Минимальная цена:", self.min_priceEdit)
+            self.formLayout.addRow("Максимальная цена:", self.max_priceEdit)
+            self.formLayout.addRow("Количество:", self.quantEdit)
+            self.formLayout.addRow(self.saveButton)
+        self.formWidget = QtWidgets.QWidget()
+        self.formWidget.setLayout(self.formLayout)
+        self.formWidget.hide()
+        self.layout.addWidget(self.formWidget)
+        return 
     # Валидация ввода
     def validateInput(self, name, code):
         if not name or not code:
@@ -248,35 +286,6 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         if not name.split('-')[1].isdigit() or len(name.split('-')[1]) != 4:
             return False
         return True     
-
-    # Подтверждение удаления
-    # def confirmAndDeleteSelectedRows(self):
-    #     # Получаем список выделенных строк
-    #     selectionModel = self.tableView.selectionModel()
-    #     selectedRows = selectionModel.selectedRows()
-
-    #     if not selectedRows:
-    #         return
-
-    #     # Получаем список индексов выделенных строк
-    #     rowIndices = sorted(index.row() for index in selectedRows)
-    #     # Формируем строку с диапазонами для отображения
-    #     ranges = self.formatRanges(rowIndices)
-        
-
-    #     # Показываем окно подтверждения
-    #     reply = QtWidgets.QMessageBox.question(
-    #         self,
-    #         "Подтверждение удаления",
-    #         f"Вы уверены, что хотите удалить следующие строки: {ranges}?",
-    #         QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No
-    #     )
-
-    #     if reply == QtWidgets.QMessageBox.StandardButton.Yes:
-    #         # Удаляем строки, начиная с последней, чтобы не нарушать индексы
-    #         for index in reversed(rowIndices):
-    #             self.model.removeRow(index)
-
 
     def confirmAndDeleteSelectedRows(self): # ----------------
         db_name = 'Subd2.db' # ----------------
@@ -361,24 +370,63 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         conn.close()
         return column_names
     
-    def to_update_or_create_union_table(self, db_name):
-        # Объединяем данные
-        merged_data = pd.merge(self.kontrakti_data, self.statistics_data, on='name', how='outer')
+    # def to_update_or_create_union_table(self, db_name):
+    #     # Объединяем данные
+    #     merged_data = pd.merge(self.kontrakti_data, self.statistics_data, on='name', how='outer')
 
-        # Переименовываем столбцы для новой таблицы
-        merged_data.columns = ['name'] + [f'{col}' for col in self.get_column_names('stat', db_name) if col != 'name'] + \
-                              [f'{col}' for col in self.get_column_names('contractss', db_name) if col != 'name']
+    #     # Переименовываем столбцы для новой таблицы
+    #     merged_data.columns = ['name'] + [f'{col}' for col in self.get_column_names('stat', db_name) if col != 'name'] + \
+    #                           [f'{col}' for col in self.get_column_names('contractss', db_name) if col != 'name']
 
-        # Сохраняем объединенные данные в новую таблицу
+    #     # Сохраняем объединенные данные в новую таблицу
+    #     conn = sqlite3.connect(db_name)
+    #     cursor = conn.cursor()
+    #     cursor.execute("DROP TABLE IF EXISTS Union_table")
+    #     conn.commit()
+    #     merged_data.to_sql('Union_table', conn, if_exists='replace',
+    #                        index=False)  # Если таблица существует, заменяем её
+    #     conn.close()
+    #     # Загружаем данные из новой таблицы в QTableWidget
+    #     self.load_table_from_db('Union_table', db_name)
+
+
+    # def create_summary_table():
+    #     
+    #     """Создает сводную таблицу, если она еще не существует."""
+    #     create_table_sql = """
+    #     CREATE TABLE IF NOT EXISTS summary (
+    #         id INTEGER PRIMARY KEY,
+    #         contractss_id INTEGER,
+    #         stat_id INTEGER,
+    #         name TEXT,
+    #         other_contractss_columns TEXT,
+    #         other_stat_columns TEXT
+    #     );
+    #     """
+    #     conn.execute(create_table_sql)
+    #     conn.commit()
+
+    def update_summary_table(self,db_name):
+        
         conn = sqlite3.connect(db_name)
-        cursor = conn.cursor()
-        cursor.execute("DROP TABLE IF EXISTS Union_table")
+        """Обновляет сводную таблицу."""
+        # Удаляем все записи из сводной таблицы
+        conn.execute("DELETE FROM summary")
+        
+        # Вставляем обновленные данные
+        insert_sql = """
+        INSERT INTO summary (name,start_date,day_end,price,min_price,max_price,contracts_quantity,exec_date,base)
+        SELECT s.name, s.start_date,s.day_end,s.price,s.min_price,s.max_price,s.contracts_quantity,c.exec_date,c.base
+        FROM contractss c
+        JOIN stat s ON c.name = s.name;
+        """
+        conn.execute(insert_sql)
         conn.commit()
-        merged_data.to_sql('Union_table', conn, if_exists='replace',
-                           index=False)  # Если таблица существует, заменяем её
         conn.close()
-        # Загружаем данные из новой таблицы в QTableWidget
-        self.load_table_from_db('Union_table', db_name)
+        self.load_table_from_db('summary',db_name )
+
+
+
 
     def load_table_from_db(self, table_name, db_name):
         self.table_name = table_name
@@ -395,6 +443,7 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         if not data.empty:
             # Устанавливаем заголовки столбцов
             self.model.setHorizontalHeaderLabels(data.columns.tolist())
+            li = ['Название','Название','Название',]
 
             # Заполняем модель данными
             for row_index, row_data in data.iterrows():
