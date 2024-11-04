@@ -67,56 +67,6 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.layout.addWidget(self.tableView)
         
 
-        # Метка для отображения типа формы
-        self.formTypeLabel = QtWidgets.QLabel("", self)
-        self.formTypeLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.formTypeLabel.hide()
-
-        # Форма редактирования/создания
-        # self.formLayout = QtWidgets.QFormLayout()
-        # self.nameEdit = QtWidgets.QLineEdit()
-        # self.nameEdit.setInputMask("00000-0000")
-        # self.priceEdit = QtWidgets.QLineEdit()
-        # self.min_priceEdit = QtWidgets.QLineEdit()
-        # self.max_priceEdit = QtWidgets.QLineEdit()
-        # self.quantEdit = QtWidgets.QLineEdit()
-        
-        # self.codeEdit = QtWidgets.QLineEdit()
-        # self.idEdit = QtWidgets.QLineEdit()
-        # self.dateEdit = QtWidgets.QDateEdit(calendarPopup=True)
-        # self.dateEdit.setDisplayFormat("dd-MMM-yy")
-
-        # self.start_dateEdit = QtWidgets.QDateEdit(calendarPopup=True)
-        # self.start_dateEdit.setDisplayFormat("dd-MMM-yy")
-
-        # --------------------------------------------------------
-
-        # self.saveButton = QtWidgets.QPushButton("Сохранить")
-        # self.saveButton.clicked.connect(self.saveRecord)
-
-        # if self.table_name == 'contractss':
-        #     self.formLayout.addRow("Название:", self.nameEdit)
-        #     self.formLayout.addRow("Код:", self.codeEdit)
-        #     self.formLayout.addRow("Дата исполнения:", self.dateEdit)
-        #     self.formLayout.addRow(self.saveButton)
-        # elif self.table_name == 'stat':
-        #     self.formLayout.addRow("Название:", self.nameEdit)
-        #     self.formLayout.addRow("Дата начала:", self.start_dateEdit)
-        #     self.formLayout.addRow("Дата исполнения:", self.dateEdit)
-        #     self.formLayout.addRow("Цена:", self.priceEdit)
-        #     self.formLayout.addRow("Минимальная цена:", self.min_priceEdit)
-        #     self.formLayout.addRow("Максимальная цена:", self.max_priceEdit)
-        #     self.formLayout.addRow("Количество:", self.quantEdit)
-        #     self.formLayout.addRow(self.saveButton)
-        # else :
-        #     print(
-        #         'hellow'
-        #     )
-        # open_popup()        
-        # self.formWidget = QtWidgets.QWidget()
-        # self.formWidget.setLayout(self.formLayout)
-        # self.formWidget.hide()
-
         # Кнопки
         self.button_layout = QtWidgets.QHBoxLayout()
         self.button_layout.addWidget(self.EditButton)
@@ -127,7 +77,7 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.AddButton.clicked.connect(self.addRecord)
         self.layout.addLayout(self.button_layout)
         # self.layout.addWidget(self.formWidget)
-        self.layout.addWidget(self.formTypeLabel)
+        # self.layout.addWidget(self.formTypeLabel)
         '''-----------------------------------------------------------------------------------------'''
     
     def editRecord(self): # ----------------
@@ -156,8 +106,8 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
             return
 
         self.formWidget.show()
-        self.formTypeLabel.setText("Редактирование записи")
-        self.formTypeLabel.show()
+        # self.formTypeLabel.setText("Редактирование записи")
+        # self.formTypeLabel.show()
         # self.toggleButtons(False)
         self.currentRow = index
     
@@ -196,8 +146,7 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
 
         if self.currentRow != None:
             id = self.idEdit.text()
-            
-        
+
 
         # if not self.validateInput(name, code):
         #     QtWidgets.QMessageBox.warning(self, "Ошибка", "Некорректный ввод данных.")
@@ -276,7 +225,7 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         # self.toggleButtons(True)
         # self.formWidget.setParent(None)
         # self.layout.removeWidget(self.formWidget)
-
+    
     def open_popup(self):
         # self.saveButton = QtWidgets.QPushButton("Сохранить")
         # self.saveButton.clicked.connect(self.saveRecord)
@@ -284,11 +233,15 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.nameEdit = QtWidgets.QLineEdit()
         self.nameEdit.setInputMask("00000-0000")
         self.priceEdit = QtWidgets.QLineEdit()
+        self.priceEdit.setPlaceholderText("Цена фьючерса")
         self.min_priceEdit = QtWidgets.QLineEdit()
+        self.min_priceEdit.setPlaceholderText("минимальная цена фьючерса")
         self.max_priceEdit = QtWidgets.QLineEdit()
+        self.max_priceEdit.setPlaceholderText("максимальная цена фьючерса")
         self.quantEdit = QtWidgets.QLineEdit()
         
         self.codeEdit = QtWidgets.QLineEdit()
+        self.codeEdit.setPlaceholderText("код фьючерса")
         self.idEdit = QtWidgets.QLineEdit()
         self.dateEdit = QtWidgets.QDateEdit(calendarPopup=True)
         self.dateEdit.setDisplayFormat("dd-MMM-yy")
