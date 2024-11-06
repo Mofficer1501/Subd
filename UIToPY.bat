@@ -1,0 +1,1 @@
+.venv/bin/pyuic6 -x mainForm2.ui -o mainForm2.py
