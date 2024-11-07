@@ -55,9 +55,10 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.tableView = QtWidgets.QTableView()
         
         self.tableView.verticalHeader().setVisible(True)
+        
 
         # Выделение всей строки при наведении 
-
+        self.tableView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Stretch)
         self.tableView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
         self.tableView.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.MultiSelection)
 
@@ -65,7 +66,7 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
 
         self.tableView.setFocus()
         self.layout.addWidget(self.tableView)
-        
+        self.tableView.setSortingEnabled(True)
 
         # Кнопки
         self.button_layout = QtWidgets.QHBoxLayout()
@@ -148,9 +149,9 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
             id = self.idEdit.text()
 
 
-        # if not self.validateInput(name, code):
-        #     QtWidgets.QMessageBox.warning(self, "Ошибка", "Некорректный ввод данных.")
-        #     return
+        if not self.validateInput(name, code):
+            QtWidgets.QMessageBox.warning(self, "Ошибка", "Некорректный ввод данных.")
+            return
 
         conn = sqlite3.connect(db_name)
         cursor = conn.cursor()
@@ -222,11 +223,17 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         QtWidgets.QMessageBox.information(self, "Сохранено", "Запись успешно сохранена.")
         # self.formWidget.hide()
         # self.formTypeLabel.hide()
-        # self.toggleButtons(True)
+        self.toggleButtons(True)
         # self.formWidget.setParent(None)
         # self.layout.removeWidget(self.formWidget)
+
+    def reject_and_show_btns(self):
+        self.formWidget.reject()
+        self.toggleButtons(True)
+        
     
     def open_popup(self):
+        self.toggleButtons(False)
         # self.saveButton = QtWidgets.QPushButton("Сохранить")
         # self.saveButton.clicked.connect(self.saveRecord)
         self.formLayout = QtWidgets.QFormLayout()
@@ -267,7 +274,8 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Ok | QtWidgets.QDialogButtonBox.StandardButton.Cancel)
         self.formLayout.addRow(buttonBox)
         buttonBox.accepted.connect(self.saveRecord)
-        buttonBox.rejected.connect(self.formWidget.reject)
+        # buttonBox.rejected.connect(self.formWidget.reject)
+        buttonBox.rejected.connect(self.reject_and_show_btns)
         # self.formWidget = QtWidgets.QWidget()
         
 
@@ -289,6 +297,7 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
     def confirmAndDeleteSelectedRows(self): # ----------------
         db_name = 'Subd2.db' # ----------------
         table_name = self.table_name
+        self.toggleButtons(False)
         # selectionModel = self.tableView.selectionModel()
         # selectedRows = selectionModel.selectedRows()
         selectedRows = self.tableView.selectionModel().selectedRows()
@@ -321,7 +330,9 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
             for i in reversed(rowIndices):
                 self.model.removeRow(i)
             conn.commit()
-            conn.close()            
+            conn.close()
+        self.toggleButtons(True)   
+           
 
     # Форматирование диапазонов
     def formatRanges(self, indices):
@@ -356,18 +367,24 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         return data
     
     def get_column_names(self, table_name, db_name):
+        if table_name == 'stat':
+            return ["Идентификатор","Название","Начало торгов","Конец торгов","Цена","Минимальная цена","Максимальная цена","Объем торгов"]
+        if table_name == 'contractss':
+            return ["Идентификатор","Название","Код","Дата исполнения"]
+        if table_name == 'summary':
+            return ["Идентификатор","Название","Начало торгов","Конец торгов","Дата исполнения","Код","Цена","Минимальная цена","Максимальная цена","Объем торгов"]
         # Подключаемся к базе данных
-        conn = sqlite3.connect(db_name)
+        # conn = sqlite3.connect(db_name)
 
         # Выполняем SQL-запрос для получения названий столбцов
-        query = f"PRAGMA table_info({table_name})"
-        columns_info = pd.read_sql_query(query, conn)
+        # query = f"PRAGMA table_info({table_name})"
+        # columns_info = pd.read_sql_query(query, conn)
 
-        # Извлекаем названия столбцов
-        column_names = columns_info['name'].tolist()
+        # # Извлекаем названия столбцов
+        # column_names = columns_info['name'].tolist()
 
-        conn.close()
-        return column_names
+        # conn.close()
+        # return column_names
     
     # def to_update_or_create_union_table(self, db_name):
     #     # Объединяем данные
@@ -406,7 +423,6 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
     #     conn.commit()
 
     def update_summary_table(self,db_name):
-        
         conn = sqlite3.connect(db_name)
         """Обновляет сводную таблицу."""
         # Удаляем все записи из сводной таблицы
@@ -428,6 +444,10 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
 
 
     def load_table_from_db(self, table_name, db_name):
+        if table_name == 'summary':
+            self.toggleButtons(False)
+        else :
+            self.toggleButtons(True)
         self.table_name = table_name
         # Используем Pandas для загрузки данных
         conn = sqlite3.connect(db_name)
@@ -435,13 +455,14 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         flag = table_name
         conn.close()
         self.data_to_table(data)
+        self.model.setHorizontalHeaderLabels(self.get_column_names(table_name,db_name))
 
     def data_to_table(self, data):
         self.model.clear()  # Очищаем предыдущие данные
 
         if not data.empty:
             # Устанавливаем заголовки столбцов
-            self.model.setHorizontalHeaderLabels(data.columns.tolist())
+            
             li = ['Название','Название','Название',]
 
             # Заполняем модель данными
@@ -454,7 +475,7 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
             #     self.model.appendRow(items)
 
             self.tableView.setModel(self.model)
-            # self.tableView.hideColumn(0) # Раскоментировать при production
+            self.tableView.hideColumn(0) # Раскоментировать при production
 
     def toggleButtons(self, show):
         self.EditButton.setVisible(show)
