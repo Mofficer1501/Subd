@@ -5,8 +5,8 @@ import pandas as pd
 
 from PyQt6 import QtWidgets
 from PyQt6.QtCore import Qt, QDate
-from PyQt6.QtWidgets import QTableWidgetItem
-from PyQt6.QtGui import QStandardItemModel, QStandardItem
+from PyQt6.QtWidgets import QTableWidgetItem,QLabel
+from PyQt6.QtGui import QStandardItemModel, QStandardItem,QIntValidator, QDoubleValidator
 
 import MainForm  # Это наш конвертированный файл дизайна
 
@@ -129,103 +129,104 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.currentRow = None
     
     def saveRecord(self):
-        db_name = 'Subd2.db' # ----------------
-        table_name = self.table_name 
-        # self.open_popup()
-        if table_name == 'contractss':
-            name = self.nameEdit.text()
-            code = self.codeEdit.text()
-            date = self.dateEdit.date().toString("dd-MMM-yy")
-        elif table_name == 'stat':
-            name = self.nameEdit.text()   
-            start_date = self.start_dateEdit.text()
-            day_end = self.dateEdit.text()
-            price = self.priceEdit.text()
-            min_price = self.min_priceEdit.text()
-            max_price = self.max_priceEdit.text()
-            quant = self.quantEdit.text()
-
-        if self.currentRow != None:
-            id = self.idEdit.text()
-
-
-        if not self.validateInput(name, code):
-            QtWidgets.QMessageBox.warning(self, "Ошибка", "Некорректный ввод данных.")
-            return
-
-        conn = sqlite3.connect(db_name)
-        cursor = conn.cursor()
-
-        if self.currentRow is None:
+        if self.validate_form():
+            db_name = 'Subd2.db' # ----------------
+            table_name = self.table_name 
+            # self.open_popup()
             if table_name == 'contractss':
-                cursor.execute(f"INSERT INTO {table_name} (name, base, exec_date) VALUES (?, ?, ?)", (name, code, date))
-                new_id = cursor.lastrowid
-                print("newId=",new_id)
-                self.model.insertRow(0, [
-                    QStandardItem(str(new_id)),
-                    QStandardItem(name),
-                    QStandardItem(code),
-                    QStandardItem(date)
-                ])
+                name = self.nameEdit.text()
+                code = self.codeEdit.text()
+                date = self.dateEdit.date().toString("dd-MMM-yy")
             elif table_name == 'stat':
-                cursor.execute(f"INSERT INTO {table_name} (name, start_date, day_end,price,min_price,max_price,contracts_quantity) VALUES (?, ?, ?, ?, ?, ?,?)", (name, start_date, day_end,price,min_price,max_price,quant))
-                new_id = cursor.lastrowid
-                print("newId=",new_id)
-                self.model.insertRow(0, [
-                    QStandardItem(str(new_id)),
-                    QStandardItem(name),
-                    QStandardItem(start_date),
-                    QStandardItem(day_end),
-                    QStandardItem(price),
-                    QStandardItem(min_price),
-                    QStandardItem(max_price),
-                    QStandardItem(quant)
-                ])
-                print('stat')   
-            self.tableView.selectRow(0)
-        else:
-            if table_name == 'contractss':
-                cursor.execute(f"UPDATE {table_name} SET name=?, base=?, exec_date=? WHERE id=?", (name, code, date, id))
-                print(id)
-                self.model.setItem(self.currentRow, 0, QStandardItem(id))
-                self.model.setItem(self.currentRow, 1, QStandardItem(name))
-                self.model.setItem(self.currentRow, 2, QStandardItem(code))
-                self.model.setItem(self.currentRow, 3, QStandardItem(date))
-                self.tableView.selectRow(self.currentRow)
-            elif table_name == 'stat':
-                cursor.execute(f"UPDATE {table_name} SET name=?, start_date=?, day_end=?, price=?, min_price=?, max_price=?,contracts_quantity=? WHERE id=?", (name, start_date, day_end,price,min_price,max_price,quant, id))
-                print(id)
-                self.model.setItem(self.currentRow, 0, QStandardItem(id))
-                self.model.setItem(self.currentRow, 1, QStandardItem(name))
-                self.model.setItem(self.currentRow, 2, QStandardItem(start_date))
-                self.model.setItem(self.currentRow, 3, QStandardItem(day_end))
-                self.model.setItem(self.currentRow, 4, QStandardItem(price))
-                self.model.setItem(self.currentRow, 5, QStandardItem(min_price))
-                self.model.setItem(self.currentRow, 6, QStandardItem(max_price))
-                self.model.setItem(self.currentRow, 7, QStandardItem(quant))
-                self.tableView.selectRow(self.currentRow)  
+                name = self.nameEdit.text()   
+                start_date = self.start_dateEdit.text()
+                day_end = self.dateEdit.text()
+                price = self.priceEdit.text()
+                min_price = self.min_priceEdit.text()
+                max_price = self.max_priceEdit.text()
+                quant = self.quantEdit.text()
+
+            if self.currentRow != None:
+                id = self.idEdit.text()
+
+
+            # if not self.validateInput(name, code):
+            #     QtWidgets.QMessageBox.warning(self, "Ошибка", "Некорректный ввод данных.")
+            #     return
+
+            conn = sqlite3.connect(db_name)
+            cursor = conn.cursor()
+
+            if self.currentRow is None:
+                if table_name == 'contractss':
+                    cursor.execute(f"INSERT INTO {table_name} (name, base, exec_date) VALUES (?, ?, ?)", (name, code, date))
+                    new_id = cursor.lastrowid
+                    print("newId=",new_id)
+                    self.model.insertRow(0, [
+                        QStandardItem(str(new_id)),
+                        QStandardItem(name),
+                        QStandardItem(code),
+                        QStandardItem(date)
+                    ])
+                elif table_name == 'stat':
+                    cursor.execute(f"INSERT INTO {table_name} (name, start_date, day_end,price,min_price,max_price,contracts_quantity) VALUES (?, ?, ?, ?, ?, ?,?)", (name, start_date, day_end,price,min_price,max_price,quant))
+                    new_id = cursor.lastrowid
+                    print("newId=",new_id)
+                    self.model.insertRow(0, [
+                        QStandardItem(str(new_id)),
+                        QStandardItem(name),
+                        QStandardItem(start_date),
+                        QStandardItem(day_end),
+                        QStandardItem(price),
+                        QStandardItem(min_price),
+                        QStandardItem(max_price),
+                        QStandardItem(quant)
+                    ])
+                    print('stat')   
+                self.tableView.selectRow(0)
+            else:
+                if table_name == 'contractss':
+                    cursor.execute(f"UPDATE {table_name} SET name=?, base=?, exec_date=? WHERE id=?", (name, code, date, id))
+                    print(id)
+                    self.model.setItem(self.currentRow, 0, QStandardItem(id))
+                    self.model.setItem(self.currentRow, 1, QStandardItem(name))
+                    self.model.setItem(self.currentRow, 2, QStandardItem(code))
+                    self.model.setItem(self.currentRow, 3, QStandardItem(date))
+                    self.tableView.selectRow(self.currentRow)
+                elif table_name == 'stat':
+                    cursor.execute(f"UPDATE {table_name} SET name=?, start_date=?, day_end=?, price=?, min_price=?, max_price=?,contracts_quantity=? WHERE id=?", (name, start_date, day_end,price,min_price,max_price,quant, id))
+                    print(id)
+                    self.model.setItem(self.currentRow, 0, QStandardItem(id))
+                    self.model.setItem(self.currentRow, 1, QStandardItem(name))
+                    self.model.setItem(self.currentRow, 2, QStandardItem(start_date))
+                    self.model.setItem(self.currentRow, 3, QStandardItem(day_end))
+                    self.model.setItem(self.currentRow, 4, QStandardItem(price))
+                    self.model.setItem(self.currentRow, 5, QStandardItem(min_price))
+                    self.model.setItem(self.currentRow, 6, QStandardItem(max_price))
+                    self.model.setItem(self.currentRow, 7, QStandardItem(quant))
+                    self.tableView.selectRow(self.currentRow)  
+                
+            conn.commit()
+            conn.close()
             
-        conn.commit()
-        conn.close()
-        
-        self.nameEdit.clear()
-        self.priceEdit.clear()
-        self.start_dateEdit.clear()
-        self.max_priceEdit.clear()
-        self.min_priceEdit.clear()
-        self.quantEdit.clear()
-        self.codeEdit.clear()
-        self.idEdit.clear()
-        self.dateEdit.clear()
-        # self.formWidget.show()
-        self.currentRow = None
-        self.formWidget.reject()
-        QtWidgets.QMessageBox.information(self, "Сохранено", "Запись успешно сохранена.")
-        # self.formWidget.hide()
-        # self.formTypeLabel.hide()
-        self.toggleButtons(True)
-        # self.formWidget.setParent(None)
-        # self.layout.removeWidget(self.formWidget)
+            self.nameEdit.clear()
+            self.priceEdit.clear()
+            self.start_dateEdit.clear()
+            self.max_priceEdit.clear()
+            self.min_priceEdit.clear()
+            self.quantEdit.clear()
+            self.codeEdit.clear()
+            self.idEdit.clear()
+            self.dateEdit.clear()
+            # self.formWidget.show()
+            self.currentRow = None
+            self.formWidget.reject()
+            QtWidgets.QMessageBox.information(self, "Сохранено", "Запись успешно сохранена.")
+            # self.formWidget.hide()
+            # self.formTypeLabel.hide()
+            self.toggleButtons(True)
+            # self.formWidget.setParent(None)
+            # self.layout.removeWidget(self.formWidget)
 
     def reject_and_show_btns(self):
         self.formWidget.reject()
@@ -256,6 +257,13 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.start_dateEdit = QtWidgets.QDateEdit(calendarPopup=True)
         self.start_dateEdit.setDisplayFormat("dd-MMM-yy")
 
+        # Валидаторы
+
+        self.priceEdit.setValidator(QDoubleValidator(0.0, 999999.99, 2))
+        self.min_priceEdit.setValidator(QDoubleValidator(0.0, 999999.99, 2))
+        self.max_priceEdit.setValidator(QDoubleValidator(0.0, 999999.99, 2))
+        self.quantEdit.setValidator(QIntValidator(0, 999999))
+
         if self.table_name == 'contractss':
             self.formLayout.addRow("Название:", self.nameEdit)
             self.formLayout.addRow("Код:", self.codeEdit)
@@ -268,7 +276,7 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
             self.formLayout.addRow("Цена:", self.priceEdit)
             self.formLayout.addRow("Минимальная цена:", self.min_priceEdit)
             self.formLayout.addRow("Максимальная цена:", self.max_priceEdit)
-            self.formLayout.addRow("Количество:", self.quantEdit)
+            self.formLayout.addRow("Объем торгов:", self.quantEdit)
             # self.formLayout.addRow(self.saveButton)
         self.formWidget = QtWidgets.QDialog()
         buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Ok | QtWidgets.QDialogButtonBox.StandardButton.Cancel)
@@ -285,14 +293,128 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         # self.layout.addWidget(self.formWidget)
         return 
     # Валидация ввода
-    def validateInput(self, name, code):
-        if not name or not code:
-            return False
-        if not name.split('-')[0].isdigit() or len(name.split('-')[0]) != 5:
-            return False
-        if not name.split('-')[1].isdigit() or len(name.split('-')[1]) != 4:
-            return False
-        return True     
+    # def validateInput(self, name, code):
+    #     if not name or not code:
+    #         return False
+    #     if not name.split('-')[0].isdigit() or len(name.split('-')[0]) != 5:
+    #         return False
+    #     if not name.split('-')[1].isdigit() or len(name.split('-')[1]) != 4:
+    #         return False
+    #     return True     
+
+    # def validate_form(self):
+    #     valid = True
+    #     error_messages = []
+
+    #     # Проверка цены
+    #     if not self.priceEdit.hasAcceptableInput():
+    #         self.priceEdit.setStyleSheet("border: 1px solid red;")
+    #         error_messages.append("Цена должна быть положительным числом.")
+    #         valid = False
+    #     else:
+    #         self.priceEdit.setStyleSheet("")
+
+    #     # Проверка минимальной и максимальной цены
+    #     min_price = float(self.min_priceEdit.text())
+    #     max_price = float(self.max_priceEdit.text())
+    #     if min_price > max_price:
+    #         self.min_priceEdit.setStyleSheet("border: 1px solid red;")
+    #         self.max_priceEdit.setStyleSheet("border: 1px solid red;")
+    #         error_messages.append("Минимальная цена не может быть больше максимальной.")
+    #         valid = False
+    #     else:
+    #         self.min_priceEdit.setStyleSheet("")
+    #         self.max_priceEdit.setStyleSheet("")
+
+    #     # Проверка дат
+    #     if self.start_dateEdit.date() > self.dateEdit.date():
+    #         self.start_dateEdit.setStyleSheet("border: 1px solid red;")
+    #         self.dateEdit.setStyleSheet("border: 1px solid red;")
+    #         error_messages.append("Дата начала не может быть позже даты исполнения.")
+    #         valid = False
+    #     else:
+    #         self.start_dateEdit.setStyleSheet("")
+    #         self.dateEdit.setStyleSheet("")
+
+    #     # Отображение ошибок
+    #     if not valid:
+    #         error_label = QLabel("\n".join(error_messages))
+    #         self.formLayout.addRow(error_label)
+
+    #     return valid
+
+    def validate_form(self):
+        self.formLayout.removeRow(8)
+        valid = True
+        error_messages = []
+        min_price = -1
+        max_price = -1
+
+        # Проверка на пустые поля
+        if not self.priceEdit.text().strip():
+            self.priceEdit.setStyleSheet("border: 1px solid red;")
+            error_messages.append("Поле 'Цена' не может быть пустым.")
+            valid = False
+
+        else:
+            self.priceEdit.setStyleSheet("")
+
+        if not self.min_priceEdit.text().strip():
+            self.min_priceEdit.setStyleSheet("border: 1px solid red;")
+            error_messages.append("Поле 'Минимальная цена' не может быть пустым.")
+            valid = False
+        else:
+            self.min_priceEdit.setStyleSheet("")
+            min_price = float(self.min_priceEdit.text())
+            
+
+        if not self.max_priceEdit.text().strip():
+            self.max_priceEdit.setStyleSheet("border: 1px solid red;")
+            error_messages.append("Поле 'Максимальная цена' не может быть пустым.")
+            valid = False
+        else:
+            self.max_priceEdit.setStyleSheet("")
+            max_price = float(self.max_priceEdit.text())
+
+        if not self.quantEdit.text().strip():
+            self.quantEdit.setStyleSheet("border: 1px solid red;")
+            error_messages.append("Поле 'Объем торгов' не может быть пустым.")
+            valid = False
+        else:
+            self.quantEdit.setStyleSheet("")
+
+        
+        
+
+        # Проверка минимальной и максимальной цены
+        # min_price = float(self.min_priceEdit.text())
+        # max_price = float(self.max_priceEdit.text())
+        if min_price != -1 and max_price != -1:
+            if min_price > max_price:
+                self.min_priceEdit.setStyleSheet("border: 1px solid red;")
+                self.max_priceEdit.setStyleSheet("border: 1px solid red;")
+                error_messages.append("Минимальная цена не может быть больше максимальной.")
+                valid = False
+            else:
+                self.min_priceEdit.setStyleSheet("")
+                self.max_priceEdit.setStyleSheet("")
+
+        # Проверка дат
+        if self.start_dateEdit.date() > self.dateEdit.date():
+            self.start_dateEdit.setStyleSheet("border: 1px solid red;")
+            self.dateEdit.setStyleSheet("border: 1px solid red;")
+            error_messages.append("Дата начала не может быть позже даты исполнения.")
+            valid = False
+        else:
+            self.start_dateEdit.setStyleSheet("")
+            self.dateEdit.setStyleSheet("")
+
+        # Отображение ошибок
+        if not valid:
+            error_label = QLabel("\n".join(error_messages))
+            self.formLayout.addRow(error_label)
+
+        return valid
 
     def confirmAndDeleteSelectedRows(self): # ----------------
         db_name = 'Subd2.db' # ----------------
