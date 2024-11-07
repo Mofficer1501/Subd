@@ -129,9 +129,9 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.currentRow = None
     
     def saveRecord(self):
-        if self.validate_form():
+        table_name = self.table_name
+        if self.validate_form(table_name):
             db_name = 'Subd2.db' # ----------------
-            table_name = self.table_name 
             # self.open_popup()
             if table_name == 'contractss':
                 name = self.nameEdit.text()
@@ -343,9 +343,11 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
 
     #     return valid
 
-    def validate_form(self):
+    def validate_form(self,table_name):
         self.formLayout.removeRow(8)
         valid = True
+        if table_name != 'stat':
+            return valid
         error_messages = []
         min_price = -1
         max_price = -1
