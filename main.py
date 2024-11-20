@@ -60,7 +60,8 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         # Выделение всей строки при наведении 
         self.tableView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Stretch)
         self.tableView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
-        self.tableView.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.MultiSelection)
+        # self.tableView.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.MultiSelection)
+        self.tableView.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
 
         self.tableView.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
 
