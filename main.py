@@ -4,7 +4,7 @@ import sqlite3
 import pandas as pd
 
 from PyQt6 import QtWidgets
-from PyQt6.QtCore import Qt, QDate
+from PyQt6.QtCore import Qt, QDate,QLocale
 from PyQt6.QtWidgets import QTableWidgetItem,QLabel
 from PyQt6.QtGui import QStandardItemModel, QStandardItem,QIntValidator, QDoubleValidator
 
@@ -83,7 +83,7 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         '''-----------------------------------------------------------------------------------------'''
     
     def editRecord(self): # ----------------
-        self.open_popup()
+        self.open_popup("edit")
         print('table_name=',self.table_name)
         selectedIndexes = self.tableView.selectionModel().selectedRows()
         if not selectedIndexes:
@@ -92,11 +92,15 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
 
         if self.table_name == 'contractss':
             self.nameEdit.setText(self.model.item(index, 1).text())
+            self.nameEdit.setReadOnly(True)
             self.codeEdit.setText(self.model.item(index, 2).text())
             self.dateEdit.setDate(QDate.fromString(self.model.item(index, 3).text(), "dd-MMM-yy"))
             self.idEdit.setText(self.model.item(index, 0).text()) 
         elif self.table_name == 'stat':
+            # self.nameComboBox.setItemText(self.model.item(index, 1).text())
             self.nameEdit.setText(self.model.item(index, 1).text())
+            # self.nameComboBox.setDisabled(True)
+            self.nameEdit.setReadOnly(True)
             self.start_dateEdit.setDate(QDate.fromString(self.model.item(index, 2).text(), "dd-MMM-yy"))
             self.dateEdit.setDate(QDate.fromString(self.model.item(index, 3).text(), "dd-MMM-yy"))
             self.idEdit.setText(self.model.item(index, 0).text())
@@ -116,8 +120,9 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
 
     # Добавление записи
     def addRecord(self):
-        self.open_popup()
+        self.open_popup("add")
         self.nameEdit.clear()
+        self.nameEdit.setReadOnly(False)
         self.priceEdit.clear()
         self.start_dateEdit.clear()
         self.max_priceEdit.clear()
@@ -126,6 +131,7 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.codeEdit.clear()
         self.idEdit.clear()
         self.dateEdit.setDate(QDate.currentDate())
+        self.start_dateEdit.setDate(QDate.currentDate())
         # self.formWidget.show()
         self.currentRow = None
     
@@ -137,7 +143,8 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
             if table_name == 'contractss':
                 name = self.nameEdit.text()
                 code = self.codeEdit.text()
-                date = self.dateEdit.date().toString("dd-MMM-yy")
+                # date = self.dateEdit.date().toString("dd-MMM-yy")
+                date = self.dateEdit.text()
             elif table_name == 'stat':
                 name = self.nameEdit.text()   
                 start_date = self.start_dateEdit.text()
@@ -232,9 +239,32 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
     def reject_and_show_btns(self):
         self.formWidget.reject()
         self.toggleButtons(True)
-        
+
+    def fill_combobox(self):
+        conn = sqlite3.connect('Subd2.db')
+        cursor = conn.cursor()  
+        cursor.execute("SELECT name, exec_date FROM contractss")
+        securities = cursor.fetchall()  
+        return securities
+
+    def update_exec_date(self):
+        # Получение даты исполнения из данных QComboBox
+        # exec_date = self.nameComboBox.currentData()
+
+        exec_date_str = self.nameComboBox.currentData()
+        name = self.nameComboBox.currentText()
+        self.nameEdit.setText(name)
+        # exec_date = QDate.fromString(exec_date_str, "yy-MMM-dd")
+        # print(exec_date)
+        self.dateShow.setText(exec_date_str)  
+
+    def get_window_title(self,title):
+        if title == "add":
+            return "Добавление"
+        else:
+            return "Редактирование"
     
-    def open_popup(self):
+    def open_popup(self,move_type):
         self.toggleButtons(False)
         # self.saveButton = QtWidgets.QPushButton("Сохранить")
         # self.saveButton.clicked.connect(self.saveRecord)
@@ -250,14 +280,14 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.quantEdit = QtWidgets.QLineEdit()
         
         self.codeEdit = QtWidgets.QLineEdit()
-        self.codeEdit.setPlaceholderText("код фьючерса")
+        self.codeEdit.setPlaceholderText("ABCD1234")
         self.idEdit = QtWidgets.QLineEdit()
         self.dateEdit = QtWidgets.QDateEdit(calendarPopup=True)
         self.dateEdit.setDisplayFormat("dd-MMM-yy")
 
         self.start_dateEdit = QtWidgets.QDateEdit(calendarPopup=True)
         self.start_dateEdit.setDisplayFormat("dd-MMM-yy")
-
+        self.nameComboBox = QtWidgets.QComboBox()
         # Валидаторы
 
         self.priceEdit.setValidator(QDoubleValidator(0.0, 999999.99, 2))
@@ -268,23 +298,44 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         if self.table_name == 'contractss':
             self.formLayout.addRow("Название:", self.nameEdit)
             self.formLayout.addRow("Код:", self.codeEdit)
-            self.formLayout.addRow("Дата исполнения:", self.dateEdit)
+            self.formLayout.addRow("Дата исполнения:", self.dateEdit)   
             # self.formLayout.addRow(self.saveButton)
         elif self.table_name == 'stat':
-            self.formLayout.addRow("Название:", self.nameEdit)
+            self.dateShow = QtWidgets.QLineEdit()
+            self.dateShow.setReadOnly(True)
+            
+            if move_type == "add":
+                data_for_combobox = self.fill_combobox()
+                for name, exec_date in data_for_combobox:
+                    self.nameComboBox.addItem(name, exec_date)
+                self.update_exec_date()    
+                self.nameComboBox.currentIndexChanged.connect(self.update_exec_date)
+                self.formLayout.addRow("Название:", self.nameComboBox)
+            else:
+                self.formLayout.addRow("Название:", self.nameEdit)
+             # тут select с названиями бумаг
+            # self.formLayout.addRow("Название:", self.nameEdit) # тут select с названиями бумаг
             self.formLayout.addRow("Дата начала:", self.start_dateEdit)
-            self.formLayout.addRow("Дата исполнения:", self.dateEdit)
+            self.formLayout.addRow("Дата окончания торгов:", self.dateEdit)
+            if move_type == 'add':
+                self.formLayout.addRow("Дата исполнения:", self.dateShow) # тут подтянется дата исполнения
             self.formLayout.addRow("Цена:", self.priceEdit)
             self.formLayout.addRow("Минимальная цена:", self.min_priceEdit)
             self.formLayout.addRow("Максимальная цена:", self.max_priceEdit)
             self.formLayout.addRow("Объем торгов:", self.quantEdit)
             # self.formLayout.addRow(self.saveButton)
         self.formWidget = QtWidgets.QDialog()
+        self.formWidget.setWindowTitle(self.get_window_title(move_type))
         buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Ok | QtWidgets.QDialogButtonBox.StandardButton.Cancel)
+        ok_button = buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok)
+        cancel_button = buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Cancel)
+        ok_button.setText("Ок")
+        cancel_button.setText("Отмена")
         self.formLayout.addRow(buttonBox)
         buttonBox.accepted.connect(self.saveRecord)
         # buttonBox.rejected.connect(self.formWidget.reject)
         buttonBox.rejected.connect(self.reject_and_show_btns)
+        buttonBox
         # self.formWidget = QtWidgets.QWidget()
         
 
@@ -292,7 +343,7 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.formWidget.open()
         # self.formWidget.hide()
         # self.layout.addWidget(self.formWidget)
-        return 
+        # return 
     # Валидация ввода
     # def validateInput(self, name, code):
     #     if not name or not code:
@@ -345,7 +396,7 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
     #     return valid
 
     def validate_form(self,table_name):
-        self.formLayout.removeRow(8)
+        self.formLayout.removeRow(9)
         valid = True
         if table_name != 'stat':
             return valid
@@ -403,6 +454,7 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
                 self.max_priceEdit.setStyleSheet("")
 
         # Проверка дат
+        print(self.start_dateEdit.date(),"----",self.dateEdit.date())
         if self.start_dateEdit.date() > self.dateEdit.date():
             self.start_dateEdit.setStyleSheet("border: 1px solid red;")
             self.dateEdit.setStyleSheet("border: 1px solid red;")
