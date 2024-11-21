@@ -21,6 +21,10 @@ class Ui_MainWindow(object):
         self.AddButton.setGeometry(QtCore.QRect(10, 440, 171, 51))
         self.AddButton.setObjectName("AddButton")
 
+        self.FilterButton = QtWidgets.QPushButton(parent=self.centralwidget)
+        self.FilterButton.setGeometry(QtCore.QRect(10, 440, 171, 51))
+        self.FilterButton.setObjectName("FilterButton")
+
         self.tableView = QtWidgets.QTableView(parent=self.centralwidget)
         self.tableView.setGeometry(QtCore.QRect(10, 20, 571, 401))
         self.tableView.setObjectName("tableView")
@@ -88,6 +92,7 @@ class Ui_MainWindow(object):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.AddButton.setText(_translate("MainWindow", "Добавить"))
+        self.FilterButton.setText(_translate("MainWindow", "Фильтровать"))
         self.EditButton.setText(_translate("MainWindow", "Редактировать"))
         self.DeleteButton.setText(_translate("MainWindow", "Удалить"))
         self.FuchersBar.setTitle(_translate("MainWindow", "Фьючерсы"))
@@ -97,7 +102,7 @@ class Ui_MainWindow(object):
         self.HelpBar.setTitle(_translate("MainWindow", "Справка"))
         self.action_5.setText(_translate("MainWindow", "Фт"))
         self.Statistika.setText(_translate("MainWindow", "Статистика торгов"))
-        self.Kontrakti.setText(_translate("MainWindow", "Контраккты"))
+        self.Kontrakti.setText(_translate("MainWindow", "Контракты"))
         self.Union.setText(_translate("MainWindow", "Объединение"))
 
 

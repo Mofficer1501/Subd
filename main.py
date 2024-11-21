@@ -73,15 +73,129 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.button_layout = QtWidgets.QHBoxLayout()
         self.button_layout.addWidget(self.EditButton)
         self.button_layout.addWidget(self.AddButton)
+        self.button_layout.addWidget(self.FilterButton)
         self.button_layout.addWidget(self.DeleteButton)
         self.DeleteButton.clicked.connect(self.confirmAndDeleteSelectedRows)
         self.EditButton.clicked.connect(self.editRecord)
         self.AddButton.clicked.connect(self.addRecord)
+        self.FilterButton.clicked.connect(self.filterRecord)
         self.layout.addLayout(self.button_layout)
         # self.layout.addWidget(self.formWidget)
         # self.layout.addWidget(self.formTypeLabel)
         '''-----------------------------------------------------------------------------------------'''
     
+    def filterRecord(self):
+        self.open_filter_popup()
+
+    def open_filter_popup(self):
+        self.toggleButtons(False)
+        self.formLayout = QtWidgets.QFormLayout()
+        # self.nameFilter = QtWidgets.QLineEdit()
+        # self.nameFilter.setPlaceholderText("Название")
+        # self.formWidget = QtWidgets.QDialog()
+        # self.formWidget.setWindowTitle(self.get_window_title("filter"))
+        # buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Ok | QtWidgets.QDialogButtonBox.StandardButton.Cancel)
+        # ok_button = buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok)
+        # cancel_button = buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Cancel)
+        # ok_button.setText("Фильтровать")
+        # cancel_button.setText("Отмена")
+        # self.formLayout.addRow(buttonBox)
+
+        self.name_filter = QtWidgets.QLineEdit()
+        self.name_filter.setPlaceholderText("2222-2222")
+
+        self.start_date_filter = QtWidgets.QDateEdit()
+        self.start_date_filter.setCalendarPopup(True)
+        self.start_date_filter.setDate(QDate.currentDate())
+
+        self.end_date_filter = QtWidgets.QDateEdit()
+        self.end_date_filter.setCalendarPopup(True)
+        self.end_date_filter.setDate(QDate.currentDate())
+
+        self.code_filter = QtWidgets.QLineEdit()
+        self.code_filter.setPlaceholderText("ABCD1234")
+
+        self.min_price_filter = QtWidgets.QLineEdit()
+        self.min_price_filter.setPlaceholderText("1")
+
+        self.max_price_filter = QtWidgets.QLineEdit()
+        self.max_price_filter.setPlaceholderText("100")
+
+        self.min_volume_filter = QtWidgets.QLineEdit()
+        self.min_volume_filter.setPlaceholderText("0")
+
+        self.max_volume_filter = QtWidgets.QLineEdit()
+        self.max_volume_filter.setPlaceholderText("100000")
+
+        # Добавляем виджеты в layout
+        self.formLayout.addRow("Название:", self.name_filter)
+        self.formLayout.addRow("Начало торгов:", self.start_date_filter)
+        self.formLayout.addRow("Конец торгов:", self.end_date_filter)
+        self.formLayout.addRow("Код:", self.code_filter)
+        self.formLayout.addRow("Минимальная цена:", self.min_price_filter)
+        self.formLayout.addRow("Максимальная цена:", self.max_price_filter)
+        self.formLayout.addRow("Объем торгов от:", self.min_volume_filter)
+        self.formLayout.addRow("Объем торгов до:", self.max_volume_filter)
+
+        self.min_price_filter.setValidator(QDoubleValidator(0.0, 100, 2))
+        self.max_price_filter.setValidator(QDoubleValidator(0.0, 100, 2))
+        self.min_volume_filter.setValidator(QIntValidator(0, 999999))
+        self.max_volume_filter.setValidator(QIntValidator(0, 999999))
+
+        self.formWidget = QtWidgets.QDialog()
+        self.formWidget.setWindowTitle(self.get_window_title("filter"))
+        buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Ok | QtWidgets.QDialogButtonBox.StandardButton.Cancel)
+        ok_button = buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok)
+        cancel_button = buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Cancel)
+        ok_button.setText("Фильтровать")
+        cancel_button.setText("Отмена")
+        self.formLayout.addRow(buttonBox)
+        buttonBox.accepted.connect(self.on_filter_button_clicked)
+        # buttonBox.rejected.connect(self.formWidget.reject)
+        buttonBox.rejected.connect(self.reject_summary)
+        self.formWidget.setLayout(self.formLayout)
+        self.formWidget.open()
+
+    def get_filters(self):
+        # return {
+        #     "name": self.name_filter.text()
+        # }
+    
+        return {
+            "name": self.name_filter.text(),
+            "start_date": self.start_date_filter.date().toString("yyyy-MM-dd") ,
+            "end_date": self.end_date_filter.date().toString("yyyy-MM-dd"),
+            "code": self.code_filter.text(),
+            "min_price": self.min_price_filter.text() if self.min_price_filter.text() else 1,
+            "max_price": self.max_price_filter.text() if self.max_price_filter.text() else 100,
+            "min_volume": self.min_volume_filter.text() if self.min_volume_filter.text() else 0,
+            "max_volume": self.max_volume_filter.text() if self.max_volume_filter.text() else 100000000000,
+        }
+
+    def on_filter_button_clicked(self):
+        filters = self.get_filters()
+        self.apply_filters(filters)
+
+    def apply_filters(self, filters):
+        data = self.get_data_from_db('summary','Subd2.db')
+        print(data)
+    # Пример фильтрации данных
+        # filtered_data = data[
+        #     (data['name'].str.contains(filters['name'], case=False))
+        # ]
+        filtered_data = data[
+            (data['name'].str.contains(filters['name'], case=False)) &
+            # (data['exec_date'] >= filters['start_date']) &
+            # (data['exec_date'] <= filters['end_date']) &
+            (data['base'].str.contains(filters['code'], case=False)) &
+            (data['price'] >= float(filters['min_price'])) &
+            (data['price'] <= float(filters['max_price'])) &
+            (data['contracts_quantity'] >= int(filters['min_volume'])) &
+            (data['contracts_quantity'] <= int(filters['max_volume'])) 
+        ]
+        self.data_to_table(filtered_data)    
+
+
     def editRecord(self): # ----------------
         self.open_popup("edit")
         print('table_name=',self.table_name)
@@ -240,6 +354,11 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.formWidget.reject()
         self.toggleButtons(True)
 
+    def reject_summary(self):
+        self.update_summary_table('Subd2.db')
+        self.formWidget.reject()
+        self.toggleButtons(True)   
+
     def fill_combobox(self):
         conn = sqlite3.connect('Subd2.db')
         cursor = conn.cursor()  
@@ -261,8 +380,10 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
     def get_window_title(self,title):
         if title == "add":
             return "Добавление"
-        else:
+        elif title == "edit":
             return "Редактирование"
+        elif title == "filter":
+            return "Фильтрация"
     
     def open_popup(self,move_type):
         self.toggleButtons(False)
@@ -599,7 +720,20 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
     #     conn.execute(create_table_sql)
     #     conn.commit()
 
+    # def replace_buttons_for_filter(self,flag):
+    #     if flag:
+    #         self.button_layout.addWidget(self.FilterButton)
+    #         self.button_layout.removeWidget(self.EditButton)
+    #         self.button_layout.removeWidget(self.AddButton)
+    #         self.button_layout.removeWidget(self.DeleteButton)
+    #     else:
+    #         self.button_layout.removeWidget(self.FilterButton)
+    #         self.button_layout.addWidget(self.EditButton)
+    #         self.button_layout.addWidget(self.AddButton)
+    #         self.button_layout.addWidget(self.DeleteButton)
+
     def update_summary_table(self,db_name):
+        # self.replace_buttons_for_filter(True)
         conn = sqlite3.connect(db_name)
         """Обновляет сводную таблицу."""
         # Удаляем все записи из сводной таблицы
@@ -621,10 +755,10 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
 
 
     def load_table_from_db(self, table_name, db_name):
-        if table_name == 'summary':
-            self.toggleButtons(False)
-        else :
-            self.toggleButtons(True)
+        # if table_name == 'summary':
+        #     self.toggleButtons(False)
+        # else :
+        #     self.toggleButtons(True)
         self.table_name = table_name
         # Используем Pandas для загрузки данных
         conn = sqlite3.connect(db_name)
@@ -634,13 +768,27 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.data_to_table(data)
         self.model.setHorizontalHeaderLabels(self.get_column_names(table_name,db_name))
 
+    def get_data_from_db(self, table_name, db_name):
+        # if table_name == 'summary':
+        #     self.toggleButtons(False)
+        # else :
+        #     self.toggleButtons(True)
+        self.table_name = table_name
+        # Используем Pandas для загрузки данных
+        conn = sqlite3.connect(db_name)
+        data = pd.read_sql_query((f"SELECT * FROM {table_name}"), conn)
+        self.model.setHorizontalHeaderLabels(self.get_column_names(table_name,db_name))
+        conn.close()
+        print(type(data))
+        return data
+        
+
     def data_to_table(self, data):
+
         self.model.clear()  # Очищаем предыдущие данные
 
         if not data.empty:
             # Устанавливаем заголовки столбцов
-            
-            li = ['Название','Название','Название',]
 
             # Заполняем модель данными
             for row_index, row_data in data.iterrows():
@@ -655,6 +803,7 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
             self.tableView.hideColumn(0) # Раскоментировать при production
 
     def toggleButtons(self, show):
+        self.FilterButton.setVisible(show)
         self.EditButton.setVisible(show)
         self.AddButton.setVisible(show)
         self.DeleteButton.setVisible(show)        
