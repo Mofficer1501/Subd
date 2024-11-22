@@ -2,6 +2,8 @@ import sys  # sys нужен для передачи argv в QApplication
 import os  # Отсюда нам понадобятся методы для отображения содержимого директорий
 import sqlite3
 import pandas as pd
+from datetime import datetime
+# import locale
 
 from PyQt6 import QtWidgets
 from PyQt6.QtCore import Qt, QDate,QLocale
@@ -9,6 +11,7 @@ from PyQt6.QtWidgets import QTableWidgetItem,QLabel
 from PyQt6.QtGui import QStandardItemModel, QStandardItem,QIntValidator, QDoubleValidator
 
 import MainForm  # Это наш конвертированный файл дизайна
+# locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
 
 class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
     def __init__(self):
@@ -163,8 +166,8 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
     
         return {
             "name": self.name_filter.text(),
-            "start_date": self.start_date_filter.date().toString("yyyy-MM-dd") ,
-            "end_date": self.end_date_filter.date().toString("yyyy-MM-dd"),
+            "start_date": self.start_date_filter.date().toString("yy-MMM-dd") ,
+            "end_date": self.end_date_filter.date().toString("yy-MMM-dd"),
             "code": self.code_filter.text(),
             "min_price": self.min_price_filter.text() if self.min_price_filter.text() else 1,
             "max_price": self.max_price_filter.text() if self.max_price_filter.text() else 100,
@@ -763,6 +766,11 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         # Используем Pandas для загрузки данных
         conn = sqlite3.connect(db_name)
         data = pd.read_sql_query((f"SELECT * FROM {table_name}"), conn)
+        if table_name != "stat":
+            data['exec_date']=data['exec_date'].apply(self.convert_date)
+            data['exec_date']=pd.to_datetime(data['exec_date'], format='%d-%b-%y')
+            data['exec_date'] = data['exec_date'].dt.date
+        # data['start_date'] = pd.to_datetime(data['start_date'], format='%d-%b-%y')
         flag = table_name
         conn.close()
         self.data_to_table(data)
@@ -777,9 +785,9 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         # Используем Pandas для загрузки данных
         conn = sqlite3.connect(db_name)
         data = pd.read_sql_query((f"SELECT * FROM {table_name}"), conn)
+        # data['start_date']=data['start_date'].apply(self.convert_date)
         self.model.setHorizontalHeaderLabels(self.get_column_names(table_name,db_name))
         conn.close()
-        print(type(data))
         return data
         
 
@@ -806,7 +814,26 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.FilterButton.setVisible(show)
         self.EditButton.setVisible(show)
         self.AddButton.setVisible(show)
-        self.DeleteButton.setVisible(show)        
+        self.DeleteButton.setVisible(show)       
+
+    def convert_date(self, date_str):
+    # Словарь для замены русских названий месяцев на английские
+        months = {
+            'Янв': 'Jan', 'Фев': 'Feb', 'Мар': 'Mar', 'Апр': 'Apr',
+            'Май': 'May', 'Июн': 'Jun', 'Июл': 'Jul', 'Авг': 'Aug',
+            'Сен': 'Sep', 'Окт': 'Oct', 'Ноя': 'Nov', 'Дек': 'Dec'
+        }
+        
+        # Разбиваем строку на части
+        day, month_rus, year = date_str.split('-')
+        
+        # Получаем английское название месяца
+        month_eng = months[month_rus]
+        
+        # Формируем новую строку даты
+        new_date_str = f"{day}-{month_eng}-{year}"
+        
+        return new_date_str     
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
