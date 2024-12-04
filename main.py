@@ -2,6 +2,8 @@ import sys  # sys нужен для передачи argv в QApplication
 import os  # Отсюда нам понадобятся методы для отображения содержимого директорий
 import sqlite3
 import pandas as pd
+import numpy as np
+from math import log
 from datetime import datetime
 # import locale
 
@@ -12,6 +14,9 @@ from PyQt6.QtGui import QStandardItemModel, QStandardItem,QIntValidator, QDouble
 
 import MainForm  # Это наш конвертированный файл дизайна
 # locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
+
+# day_end это дата погашения
+# exec_date - дата исполнения
 
 class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
     def __init__(self):
@@ -43,6 +48,7 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.Kontrakti.triggered.connect(lambda: self.load_table_from_db('contractss', db_name))
         self.Statistika.triggered.connect(lambda: self.load_table_from_db('stat', db_name))
         self.Union.triggered.connect(lambda: self.update_summary_table(db_name))
+        self.Analyze.triggered.connect(lambda: self.update_analyze_table(db_name))
         '''-----------------------------------------------------------------------------------------'''
         
         
@@ -58,16 +64,18 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.tableView = QtWidgets.QTableView()
         
         self.tableView.verticalHeader().setVisible(True)
+        self.tableView.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+        # self.table_view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         
 
         # Выделение всей строки при наведении 
-        self.tableView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Stretch)
+        # self.tableView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Stretch)
         self.tableView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
         # self.tableView.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.MultiSelection)
         self.tableView.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
 
         self.tableView.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
-
+        self.tableView.setColumnWidth(0, 250)
         self.tableView.setFocus()
         self.layout.addWidget(self.tableView)
         self.tableView.setSortingEnabled(True)
@@ -669,11 +677,11 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
     
     def get_column_names(self, table_name, db_name):
         if table_name == 'stat':
-            return ["Идентификатор","Название","Начало торгов","Конец торгов","Цена","Минимальная цена","Максимальная цена","Объем торгов"]
+            return ["Идентификатор","Название","День торгов","Дата погашения","Цена","Минимальная цена","Максимальная цена","Объем торгов"]
         if table_name == 'contractss':
             return ["Идентификатор","Название","Код","Дата исполнения"]
         if table_name == 'summary':
-            return ["Идентификатор","Название","Начало торгов","Конец торгов","Дата исполнения","Код","Цена","Минимальная цена","Максимальная цена","Объем торгов"]
+            return ["Идентификатор","Название","Дата торгов","Дата погашения","Дата исполнения","Код","Цена","Минимальная цена","Максимальная цена","Объем торгов"]
         # Подключаемся к базе данных
         # conn = sqlite3.connect(db_name)
 
@@ -754,10 +762,29 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         conn.close()
         self.load_table_from_db('summary',db_name )
 
+    def only_update_summary_table(self,db_name):
+        # self.replace_buttons_for_filter(True)
+        conn = sqlite3.connect(db_name)
+        """Обновляет сводную таблицу."""
+        # Удаляем все записи из сводной таблицы
+        conn.execute("DELETE FROM summary")
+        
+        # Вставляем обновленные данные
+        insert_sql = """
+        INSERT INTO summary (name,start_date,day_end,price,min_price,max_price,contracts_quantity,exec_date,base)
+        SELECT s.name, s.start_date,s.day_end,s.price,s.min_price,s.max_price,s.contracts_quantity,c.exec_date,c.base
+        FROM contractss c
+        JOIN stat s ON c.name = s.name;
+        """
+        conn.execute(insert_sql)
+        conn.commit()
+        conn.close()
+
 
 
 
     def load_table_from_db(self, table_name, db_name):
+        self.tableView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Stretch)
         # if table_name == 'summary':
         #     self.toggleButtons(False)
         # else :
@@ -766,10 +793,18 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         # Используем Pandas для загрузки данных
         conn = sqlite3.connect(db_name)
         data = pd.read_sql_query((f"SELECT * FROM {table_name}"), conn)
-        if table_name != "stat":
+        if table_name == "contractss" or table_name == "summary":
             data['exec_date']=data['exec_date'].apply(self.convert_date)
             data['exec_date']=pd.to_datetime(data['exec_date'], format='%d-%b-%y')
             data['exec_date'] = data['exec_date'].dt.date
+
+        if table_name == "stat" or table_name == "summary":
+            data['start_date']=data['start_date'].apply(self.convert_date)
+            data['day_end']=data['day_end'].apply(self.convert_date)
+            data['start_date']=pd.to_datetime(data['start_date'], format='%d-%b-%y')
+            data['day_end']=pd.to_datetime(data['day_end'], format='%d-%b-%y')
+            data['start_date'] = data['start_date'].dt.date
+            data['day_end'] = data['day_end'].dt.date
         # data['start_date'] = pd.to_datetime(data['start_date'], format='%d-%b-%y')
         flag = table_name
         conn.close()
@@ -810,6 +845,40 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
             self.tableView.setModel(self.model)
             self.tableView.hideColumn(0) # Раскоментировать при production
 
+    def analyze_data_to_table(self, data):
+        self.model.clear()  # Очищаем предыдущие данные
+        if not data.empty:
+        # Пивотируем данные
+            pivot_data = data.pivot(index='start_date', columns='name', values='xk').fillna('')
+
+            # Устанавливаем заголовки столбцов
+            self.model.setHorizontalHeaderLabels(['start_date'] + list(pivot_data.columns))
+
+            # Заполняем модель данными
+            for row_index, (index, row_data) in enumerate(pivot_data.iterrows()):
+                items = [QStandardItem(str(index))] + [QStandardItem(str(item)) for item in row_data]
+                self.model.insertRow(row_index, items)
+        # if not data.empty:
+        #     # Устанавливаем заголовки столбцов
+        #     self.model.setHorizontalHeaderLabels(data["name"])
+            # for row_index, row_data in data.iterrows():
+            #     items = []
+            #     for item in row_data:
+            #         # Проверяем, является ли значение NaN
+            #         if pd.isna(item):
+            #             items.append(QStandardItem(""))  # Пустая строка для NaN
+            #         else:
+            #             items.append(QStandardItem(str(item)))
+            #     self.model.appendRow(items)
+        # column_width = 200  # Задаем желаемую ширину
+        # for column in range(self.model.columnCount()):
+        #     self.tableView.setColumnWidth(column, column_width)
+        self.tableView.setModel(self.model)
+        self.tableView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Fixed)
+        self.tableView.setColumnWidth(0, 250)
+
+
+
     def toggleButtons(self, show):
         self.FilterButton.setVisible(show)
         self.EditButton.setVisible(show)
@@ -817,23 +886,93 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.DeleteButton.setVisible(show)       
 
     def convert_date(self, date_str):
-    # Словарь для замены русских названий месяцев на английские
+    # замена русских названий месяцев на английские
         months = {
-            'Янв': 'Jan', 'Фев': 'Feb', 'Мар': 'Mar', 'Апр': 'Apr',
-            'Май': 'May', 'Июн': 'Jun', 'Июл': 'Jul', 'Авг': 'Aug',
-            'Сен': 'Sep', 'Окт': 'Oct', 'Ноя': 'Nov', 'Дек': 'Dec'
+            'янв': 'Jan', 'фев': 'Feb', 'мар': 'Mar', 'апр': 'Apr',
+            'май': 'May', 'июн': 'Jun', 'июл': 'Jul', 'авг': 'Aug',
+            'сен': 'Sep', 'окт': 'Oct', 'ноя': 'Nov', 'дек': 'Dec'
         }
-        
-        # Разбиваем строку на части
         day, month_rus, year = date_str.split('-')
-        
-        # Получаем английское название месяца
+        month_rus = month_rus.lower()
         month_eng = months[month_rus]
-        
-        # Формируем новую строку даты
         new_date_str = f"{day}-{month_eng}-{year}"
+        return new_date_str 
+      
+    def convert_date_for_analyze(self, date_str):
+    # замена русских названий месяцев на английские
+        months = {
+            'янв': 'Jan', 'фев': 'Feb', 'мар': 'Mar', 'апр': 'Apr',
+            'май': 'May', 'июн': 'Jun', 'июл': 'Jul', 'авг': 'Aug',
+            'сен': 'Sep', 'окт': 'Oct', 'ноя': 'Nov', 'дек': 'Dec'
+        }
+        day, month_rus, year = date_str.split('-')
+        month_rus = month_rus.lower()
+        month_eng = months[month_rus]
+        new_date_str = f"{day}-{month_eng}-{year}"
+        return datetime.strptime(new_date_str, "%d-%b-%y")
+    
+
+    def update_analyze_table(self, db_name):
+    # Подключаемся к базе данных
+        self.only_update_summary_table(db_name)
+
+        conn = sqlite3.connect(db_name)
         
-        return new_date_str     
+        # Загружаем данные из таблицы
+        query = "SELECT name, start_date, day_end, exec_date, price FROM summary"
+        df = pd.read_sql_query(query, conn)
+        
+        # Закрываем соединение с базой данных
+        conn.close()
+        
+        # Преобразуем даты в формат datetime
+        # df['start_date'] = pd.to_datetime(df['start_date'])
+        # df['day_end'] = pd.to_datetime(df['day_end'])
+        # df['exec_date'] = pd.to_datetime(df['exec_date'])
+
+        df['start_date'] = df['start_date'].apply(self.convert_date_for_analyze)
+        df['day_end'] = df['day_end'].apply(self.convert_date_for_analyze)
+        df['exec_date'] = df['exec_date'].apply(self.convert_date_for_analyze)
+        
+        # Группируем данные по названию фьючерса
+        grouped = df.groupby('name')
+        
+        
+        # Создаем список для хранения результатов
+        results = []
+
+        for name, group in grouped:
+            # Сортируем по дате торгов
+            group = group.sort_values('start_date')
+            # Рассчитываем rk(i) и xk(i)
+            rks = []
+            xks = []
+            
+            for i in range(len(group)):
+                Tnk = group.iloc[i]['day_end']
+                Tik = group.iloc[i]['exec_date']
+                Tr = (Tik - Tnk).days
+                Fk = group.iloc[i]['price']
+                rk = log(Fk / 100) / Tr
+                rks.append(rk)
+                if i < 1:
+                    xks.append(None)
+                else:
+                    xk = round(log(rk / rks[i-2]), 2)
+                    xks.append(xk)
+            
+            # Добавляем результаты в список
+            results.append(
+                pd.DataFrame({
+                'name': name,
+                'start_date': group['start_date'],
+                'xk': xks
+            }))
+        
+        # Объединяем результаты в один DataFrame
+        result_df = pd.concat(results)
+        self.analyze_data_to_table(result_df)
+        # Выводим таблицу
 
 def main():
     app = QtWidgets.QApplication(sys.argv)

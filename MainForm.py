@@ -47,13 +47,13 @@ class Ui_MainWindow(object):
         self.menubar.setObjectName("menubar")
 
         self.FuchersBar = QtWidgets.QMenu(parent=self.menubar)
-        self.FuchersBar.setObjectName("FuchersBar"
-                                      )
+        self.FuchersBar.setObjectName("FuchersBar")
+
         self.TableBar = QtWidgets.QMenu(parent=self.menubar)
         self.TableBar.setObjectName("TableBar")
 
-        self.CalcBar = QtWidgets.QMenu(parent=self.menubar)
-        self.CalcBar.setObjectName("CalcBar")
+        self.CalcButton = QtWidgets.QMenu(parent=self.menubar)
+        self.CalcButton.setObjectName("CalcButton")
 
         self.ReportBar = QtWidgets.QMenu(parent=self.menubar)
         self.ReportBar.setObjectName("ReportBar")
@@ -75,13 +75,18 @@ class Ui_MainWindow(object):
         self.Union = QtGui.QAction(parent=MainWindow)
         self.Union.setObjectName("Union")
 
+        self.Analyze = QtGui.QAction(parent=MainWindow)
+        self.Analyze.setObjectName("Analyze")
+
+
         self.TableBar.addAction(self.Statistika)
         self.TableBar.addAction(self.Kontrakti)
         self.TableBar.addAction(self.Union)
+        self.TableBar.addAction(self.Analyze)
         
         self.menubar.addAction(self.FuchersBar.menuAction())
         self.menubar.addAction(self.TableBar.menuAction())
-        self.menubar.addAction(self.CalcBar.menuAction())
+        self.menubar.addAction(self.CalcButton.menuAction())
         self.menubar.addAction(self.ReportBar.menuAction())
         self.menubar.addAction(self.HelpBar.menuAction())
 
@@ -97,13 +102,14 @@ class Ui_MainWindow(object):
         self.DeleteButton.setText(_translate("MainWindow", "Удалить"))
         self.FuchersBar.setTitle(_translate("MainWindow", "Фьючерсы"))
         self.TableBar.setTitle(_translate("MainWindow", "Таблицы"))
-        self.CalcBar.setTitle(_translate("MainWindow", "Расчёт"))
+        self.CalcButton.setTitle(_translate("MainWindow", "Расчёт"))
         self.ReportBar.setTitle(_translate("MainWindow", "Отчетность"))
         self.HelpBar.setTitle(_translate("MainWindow", "Справка"))
         self.action_5.setText(_translate("MainWindow", "Фт"))
         self.Statistika.setText(_translate("MainWindow", "Статистика торгов"))
         self.Kontrakti.setText(_translate("MainWindow", "Контракты"))
         self.Union.setText(_translate("MainWindow", "Объединение"))
+        self.Analyze.setText(_translate("MainWindow", "Анализ"))
 
 
 '''if __name__ == "__main__":
