@@ -78,11 +78,19 @@ class Ui_MainWindow(object):
         self.Analyze = QtGui.QAction(parent=MainWindow)
         self.Analyze.setObjectName("Analyze")
 
+        self.Gipot = QtGui.QAction(parent=MainWindow)
+        self.Gipot.setObjectName("Gipot")
+
+        self.Mean = QtGui.QAction(parent=MainWindow)
+        self.Mean.setObjectName("Mean")
+
 
         self.TableBar.addAction(self.Statistika)
         self.TableBar.addAction(self.Kontrakti)
         self.TableBar.addAction(self.Union)
         self.TableBar.addAction(self.Analyze)
+        self.TableBar.addAction(self.Gipot)
+        self.TableBar.addAction(self.Mean)
         
         self.menubar.addAction(self.FuchersBar.menuAction())
         self.menubar.addAction(self.TableBar.menuAction())
@@ -110,6 +118,8 @@ class Ui_MainWindow(object):
         self.Kontrakti.setText(_translate("MainWindow", "Контракты"))
         self.Union.setText(_translate("MainWindow", "Объединение"))
         self.Analyze.setText(_translate("MainWindow", "Анализ"))
+        self.Gipot.setText(_translate("MainWindow", "Гипотезы"))
+        self.Mean.setText(_translate("MainWindow", "Показатели"))
 
 
 '''if __name__ == "__main__":

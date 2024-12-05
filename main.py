@@ -4,7 +4,9 @@ import sqlite3
 import pandas as pd
 import numpy as np
 from math import log
+from scipy.stats import kstest
 from datetime import datetime
+
 # import locale
 
 from PyQt6 import QtWidgets
@@ -49,6 +51,9 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.Statistika.triggered.connect(lambda: self.load_table_from_db('stat', db_name))
         self.Union.triggered.connect(lambda: self.update_summary_table(db_name))
         self.Analyze.triggered.connect(lambda: self.update_analyze_table(db_name))
+        # self.Analyze.triggered.connect(lambda: self.get_max_x_gipotize(db_name))
+        self.Gipot.triggered.connect(self.open_gipot_popup)
+        self.Mean.triggered.connect(self.open_mean_popup)
         '''-----------------------------------------------------------------------------------------'''
         
         
@@ -167,6 +172,57 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.formWidget.setLayout(self.formLayout)
         self.formWidget.open()
 
+
+    def open_gipot_popup(self):
+        print('gipot')
+        self.toggleButtons(False)
+        self.formLayout = QtWidgets.QFormLayout()
+        self.gipot_date = QtWidgets.QDateEdit()
+        self.gipot_date.setCalendarPopup(True)
+        # self.end_date_filter.setDate(QDate.currentDate())
+
+        # Добавляем виджеты в layout
+        self.formLayout.addRow("Дата:", self.gipot_date)
+
+        self.formWidget = QtWidgets.QDialog()
+        self.formWidget.setWindowTitle(self.get_window_title("gipot"))
+        buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Ok | QtWidgets.QDialogButtonBox.StandardButton.Cancel)
+        ok_button = buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok)
+        cancel_button = buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Cancel)
+        ok_button.setText("Проверить")
+        cancel_button.setText("Отмена")
+        self.formLayout.addRow(buttonBox)
+        buttonBox.accepted.connect(self.get_max_x_gipotize)
+        # buttonBox.rejected.connect(self.formWidget.reject)
+        buttonBox.rejected.connect(self.reject_and_show_btns)
+        self.formWidget.setLayout(self.formLayout)
+        self.formWidget.open()  
+
+    def open_mean_popup(self):
+        print('mean')
+        self.toggleButtons(False)
+        self.formLayout = QtWidgets.QFormLayout()
+        self.mean_date = QtWidgets.QDateEdit()
+        self.mean_date.setCalendarPopup(True)
+        # self.end_date_filter.setDate(QDate.currentDate())
+
+        # Добавляем виджеты в layout
+        self.formLayout.addRow("Дата:", self.mean_date)
+
+        self.formWidget = QtWidgets.QDialog()
+        self.formWidget.setWindowTitle(self.get_window_title("stat"))
+        buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Ok | QtWidgets.QDialogButtonBox.StandardButton.Cancel)
+        ok_button = buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok)
+        cancel_button = buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Cancel)
+        ok_button.setText("Рассчитать")
+        cancel_button.setText("Отмена")
+        self.formLayout.addRow(buttonBox)
+        buttonBox.accepted.connect(self.update_mean_table)
+        # buttonBox.rejected.connect(self.formWidget.reject)
+        buttonBox.rejected.connect(self.reject_and_show_btns)
+        self.formWidget.setLayout(self.formLayout)
+        self.formWidget.open()    
+
     def get_filters(self):
         # return {
         #     "name": self.name_filter.text()
@@ -182,6 +238,13 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
             "min_volume": self.min_volume_filter.text() if self.min_volume_filter.text() else 0,
             "max_volume": self.max_volume_filter.text() if self.max_volume_filter.text() else 100000000000,
         }
+    
+
+    def get_t_date(self):
+        return self.gipot_date.date()
+    
+    def get_t_mean_date(self):
+        return self.mean_date.date()
 
     def on_filter_button_clicked(self):
         filters = self.get_filters()
@@ -395,6 +458,10 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
             return "Редактирование"
         elif title == "filter":
             return "Фильтрация"
+        elif title == "gipot":
+            return "Проверка гипотезы"
+        elif title == "stat":
+            return "Статистика показателей"
     
     def open_popup(self,move_type):
         self.toggleButtons(False)
@@ -852,7 +919,39 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
             pivot_data = data.pivot(index='start_date', columns='name', values='xk').fillna('')
 
             # Устанавливаем заголовки столбцов
-            self.model.setHorizontalHeaderLabels(['start_date'] + list(pivot_data.columns))
+            self.model.setHorizontalHeaderLabels([''] + list(pivot_data.columns))
+
+            # Заполняем модель данными
+            for row_index, (index, row_data) in enumerate(pivot_data.iterrows()):
+                items = [QStandardItem(str(index))] + [QStandardItem(str(item)) for item in row_data]
+                self.model.insertRow(row_index, items)
+        # if not data.empty:
+        #     # Устанавливаем заголовки столбцов
+        #     self.model.setHorizontalHeaderLabels(data["name"])
+            # for row_index, row_data in data.iterrows():
+            #     items = []
+            #     for item in row_data:
+            #         # Проверяем, является ли значение NaN
+            #         if pd.isna(item):
+            #             items.append(QStandardItem(""))  # Пустая строка для NaN
+            #         else:
+            #             items.append(QStandardItem(str(item)))
+            #     self.model.appendRow(items)
+        # column_width = 200  # Задаем желаемую ширину
+        # for column in range(self.model.columnCount()):
+        #     self.tableView.setColumnWidth(column, column_width)
+        self.tableView.setModel(self.model)
+        self.tableView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Fixed)
+        self.tableView.setColumnWidth(0, 250)
+
+    def mean_data_to_table(self, data):
+        self.model.clear()  # Очищаем предыдущие данные
+        if not data.empty:
+        # Пивотируем данные
+            pivot_data = data.pivot(index='start_date', columns='name', values='xk').fillna('')
+
+            # Устанавливаем заголовки столбцов
+            self.model.setHorizontalHeaderLabels([''] + list(pivot_data.columns))
 
             # Заполняем модель данными
             for row_index, (index, row_data) in enumerate(pivot_data.iterrows()):
@@ -911,6 +1010,99 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         new_date_str = f"{day}-{month_eng}-{year}"
         return datetime.strptime(new_date_str, "%d-%b-%y")
     
+    def convert_to_pd_date(self, qdate):
+        year = qdate.year()
+        month = qdate.month()
+        day = qdate.day()
+        
+        # Создаем объект datetime
+        date_obj = datetime(year, month, day)
+        
+        # Форматируем дату в строку
+        return date_obj.strftime("%d-%b-%y")
+    
+    def calculate_stats(self,lst):
+    # Убираем None из списка
+        filtered_lst = [x for x in lst if x is not None]
+        
+        if not filtered_lst:
+            return None, None, None, None
+        
+        # Вычисляем минимальное и максимальное значения
+        min_val = round(min(filtered_lst),2)
+        max_val = round(max(filtered_lst),2)
+        
+        # Вычисляем среднее значение
+        mean_val = round((sum(filtered_lst) / len(filtered_lst)),2)
+        
+        # Вычисляем дисперсию
+        variance = sum((x - mean_val) ** 2 for x in filtered_lst) / len(filtered_lst)
+        
+        return [min_val, max_val, mean_val, round(variance,2)]
+    
+    def update_mean_table(self):
+        db_name = 'Subd2.db'
+            # date_up = "01-Сен-96"
+        date_up = self.get_t_mean_date()
+        print(date_up)
+            # date_x = self.convert_date_for_analyze(date_up)
+        date_x = self.convert_to_pd_date(date_up)
+
+        self.only_update_summary_table(db_name)
+
+        conn = sqlite3.connect(db_name)
+            
+            # Загружаем данные из таблицы
+        query = "SELECT name, start_date, day_end, exec_date, price FROM summary"
+        df = pd.read_sql_query(query, conn)
+            
+        conn.close()
+
+        df['start_date'] = df['start_date'].apply(self.convert_date_for_analyze)
+        df_up = df[df['start_date'] < date_x]
+        df_up['day_end'] = df['day_end'].apply(self.convert_date_for_analyze)
+        df_up['exec_date'] = df['exec_date'].apply(self.convert_date_for_analyze)
+            
+            # Группируем данные по названию фьючерса
+        grouped = df_up.groupby('name')
+        
+        # Создаем список для хранения результатов
+        results = []
+
+        for name, group in grouped:
+            # Сортируем по дате торгов
+            group = group.sort_values('start_date')
+            # Рассчитываем rk(i) и xk(i)
+            rks = []
+            xks = []
+            
+            for i in range(len(group)):
+                Tnk = group.iloc[i]['day_end']
+                Tik = group.iloc[i]['exec_date']
+                Tr = (Tik - Tnk).days
+                Fk = group.iloc[i]['price']
+                rk = log(Fk / 100) / Tr
+                rks.append(rk)
+                if i < 1:
+                    xks.append(None)
+                else:
+                    xk = round(log(rk / rks[i-2]), 2)
+                    xks.append(xk)
+            
+            # Добавляем результаты в список
+            results.append(
+                pd.DataFrame({
+                'name': name, 
+                'start_date': ['минимум','максимум','сренднее','дисперсия'],
+                'xk': self.calculate_stats(xks)
+            }))
+        
+        # Объединяем результаты в один DataFrame
+        result_df = pd.concat(results)
+        self.formWidget.reject()
+        self.toggleButtons(True)
+        print(result_df)
+        self.mean_data_to_table(result_df)
 
     def update_analyze_table(self, db_name):
     # Подключаемся к базе данных
@@ -936,6 +1128,7 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         
         # Группируем данные по названию фьючерса
         grouped = df.groupby('name')
+        max_length = max(len(group) for name,group in grouped)
         
         
         # Создаем список для хранения результатов
@@ -971,8 +1164,76 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         
         # Объединяем результаты в один DataFrame
         result_df = pd.concat(results)
+        print(result_df)
         self.analyze_data_to_table(result_df)
         # Выводим таблицу
+
+    def get_max_x_gipotize(self):
+    # Подключаемся к базе данных
+            db_name = 'Subd2.db'
+            # date_up = "01-Сен-96"
+            date_up = self.get_t_date()
+            print(date_up)
+            # date_x = self.convert_date_for_analyze(date_up)
+            date_x = self.convert_to_pd_date(date_up)
+
+            self.only_update_summary_table(db_name)
+
+            conn = sqlite3.connect(db_name)
+            
+            # Загружаем данные из таблицы
+            query = "SELECT name, start_date, day_end, exec_date, price FROM summary"
+            df = pd.read_sql_query(query, conn)
+            
+            conn.close()
+
+            df['start_date'] = df['start_date'].apply(self.convert_date_for_analyze)
+            df_up = df[df['start_date'] < date_x]
+            df_up['day_end'] = df['day_end'].apply(self.convert_date_for_analyze)
+            df_up['exec_date'] = df['exec_date'].apply(self.convert_date_for_analyze)
+            
+            # Группируем данные по названию фьючерса
+            grouped = df_up.groupby('name')
+            max_length = max(len(group) for name,group in grouped)
+
+            max_group = [group for name,group in grouped if len(group) == max_length]
+            group = max_group[0].sort_values('start_date')
+            rks = []
+            xks = []
+            for i in range(len(group)):
+                Tnk = group.iloc[i]['day_end']
+                Tik = group.iloc[i]['exec_date']
+                Tr = (Tik - Tnk).days
+                Fk = group.iloc[i]['price']
+                rk = log(Fk / 100) / Tr
+                rks.append(rk)
+                print(i)
+                if i < 2:
+                    xks.append(None)
+                else:
+                    xk = round(log(rk / rks[i-2]), 2)
+                    xks.append(xk)
+            print("XKS=",xks)   
+            xk_values = list(filter(lambda x: x is not None, xks))   
+            mean = np.mean(xk_values)
+            std = np.std(xk_values, ddof=1)
+
+            # Применяем тест Колмогорова-Смирнова
+            stat, p_value = kstest(xk_values, 'norm', args=(mean, std))
+            self.formWidget.reject()
+            print('Статистика теста Колмогорова-Смирнова:', stat)
+            print('p-значение:', p_value)
+            message = ""
+            # Проверка гипотезы
+            alpha = 0.05
+            if p_value > alpha:
+                message = 'Не удается отвергнуть нулевую гипотезу: данные распределены нормально'
+            else:
+                message = 'Нулевая гипотеза отвергнута: данные не распределены нормально'
+            self.toggleButtons(True)
+            QtWidgets.QMessageBox.information(self, "Результат проверки гипотезы", message)
+
+                
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
