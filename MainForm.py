@@ -25,6 +25,10 @@ class Ui_MainWindow(object):
         self.FilterButton.setGeometry(QtCore.QRect(10, 440, 171, 51))
         self.FilterButton.setObjectName("FilterButton")
 
+        self.TrendButton = QtWidgets.QPushButton(parent=self.centralwidget)
+        self.TrendButton.setGeometry(QtCore.QRect(10, 440, 171, 51))
+        self.TrendButton.setObjectName("TrendButton")
+
         self.tableView = QtWidgets.QTableView(parent=self.centralwidget)
         self.tableView.setGeometry(QtCore.QRect(10, 20, 571, 401))
         self.tableView.setObjectName("tableView")
@@ -107,6 +111,7 @@ class Ui_MainWindow(object):
         self.AddButton.setText(_translate("MainWindow", "Добавить"))
         self.FilterButton.setText(_translate("MainWindow", "Фильтровать"))
         self.EditButton.setText(_translate("MainWindow", "Редактировать"))
+        self.TrendButton.setText(_translate("MainWindow", "Тренд"))
         self.DeleteButton.setText(_translate("MainWindow", "Удалить"))
         self.FuchersBar.setTitle(_translate("MainWindow", "Фьючерсы"))
         self.TableBar.setTitle(_translate("MainWindow", "Таблицы"))

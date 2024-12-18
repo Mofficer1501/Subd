@@ -12,7 +12,7 @@ from datetime import datetime
 from PyQt6 import QtWidgets
 from PyQt6.QtCore import Qt, QDate,QLocale
 from PyQt6.QtWidgets import QTableWidgetItem,QLabel
-from PyQt6.QtGui import QStandardItemModel, QStandardItem,QIntValidator, QDoubleValidator
+from PyQt6.QtGui import QStandardItemModel, QStandardItem,QIntValidator, QDoubleValidator,QColor
 
 import MainForm  # Это наш конвертированный файл дизайна
 # locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
@@ -33,7 +33,9 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         '''-------------------Пропорциональное размещение виджетов-------------------------------------------'''
         central_widget = QtWidgets.QWidget(self)
         self.setCentralWidget(central_widget)
+        
         layout = QtWidgets.QVBoxLayout(central_widget)
+        self.mean_date_for_trend = None
 
         self.model = QStandardItemModel()
         self.tableView.setModel(self.model)
@@ -84,17 +86,18 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.tableView.setFocus()
         self.layout.addWidget(self.tableView)
         self.tableView.setSortingEnabled(True)
-
         # Кнопки
         self.button_layout = QtWidgets.QHBoxLayout()
         self.button_layout.addWidget(self.EditButton)
         self.button_layout.addWidget(self.AddButton)
         self.button_layout.addWidget(self.FilterButton)
         self.button_layout.addWidget(self.DeleteButton)
+        self.button_layout.addWidget(self.TrendButton)
         self.DeleteButton.clicked.connect(self.confirmAndDeleteSelectedRows)
         self.EditButton.clicked.connect(self.editRecord)
         self.AddButton.clicked.connect(self.addRecord)
         self.FilterButton.clicked.connect(self.filterRecord)
+        self.TrendButton.clicked.connect(self.open_trend_popup)
         self.layout.addLayout(self.button_layout)
         # self.layout.addWidget(self.formWidget)
         # self.layout.addWidget(self.formTypeLabel)
@@ -221,6 +224,31 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         # buttonBox.rejected.connect(self.formWidget.reject)
         buttonBox.rejected.connect(self.reject_and_show_btns)
         self.formWidget.setLayout(self.formLayout)
+        self.formWidget.open()  
+
+    def open_trend_popup(self):
+        print('trend')
+        self.toggleButtons(False)
+        self.formLayout = QtWidgets.QFormLayout()
+        self.trend_date = QtWidgets.QDateEdit()
+        self.trend_date.setCalendarPopup(True)
+        # self.end_date_filter.setDate(QDate.currentDate())
+
+        # Добавляем виджеты в layout
+        self.formLayout.addRow("Дата:", self.trend_date)
+
+        self.formWidget = QtWidgets.QDialog()
+        self.formWidget.setWindowTitle(self.get_window_title("trend"))
+        buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Ok | QtWidgets.QDialogButtonBox.StandardButton.Cancel)
+        ok_button = buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok)
+        cancel_button = buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Cancel)
+        ok_button.setText("Показать")
+        cancel_button.setText("Отмена")
+        self.formLayout.addRow(buttonBox)
+        buttonBox.accepted.connect(self.trend_update_mean_table)
+        # buttonBox.rejected.connect(self.formWidget.reject)
+        buttonBox.rejected.connect(self.reject_and_show_btns)
+        self.formWidget.setLayout(self.formLayout)
         self.formWidget.open()    
 
     def get_filters(self):
@@ -244,7 +272,11 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         return self.gipot_date.date()
     
     def get_t_mean_date(self):
+        self.mean_date_for_trend = self.mean_date.date()
         return self.mean_date.date()
+    
+    def get_trend_date(self):
+        return self.trend_date.date()
 
     def on_filter_button_clicked(self):
         filters = self.get_filters()
@@ -462,6 +494,8 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
             return "Проверка гипотезы"
         elif title == "stat":
             return "Статистика показателей"
+        elif title == "trend":
+            return "Изменения тренда"
     
     def open_popup(self,move_type):
         self.toggleButtons(False)
@@ -749,41 +783,9 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
             return ["Идентификатор","Название","Код","Дата исполнения"]
         if table_name == 'summary':
             return ["Идентификатор","Название","Дата торгов","Дата погашения","Дата исполнения","Код","Цена","Минимальная цена","Максимальная цена","Объем торгов"]
-        # Подключаемся к базе данных
-        # conn = sqlite3.connect(db_name)
-
-        # Выполняем SQL-запрос для получения названий столбцов
-        # query = f"PRAGMA table_info({table_name})"
-        # columns_info = pd.read_sql_query(query, conn)
-
-        # # Извлекаем названия столбцов
-        # column_names = columns_info['name'].tolist()
-
-        # conn.close()
-        # return column_names
     
-    # def to_update_or_create_union_table(self, db_name):
-    #     # Объединяем данные
-    #     merged_data = pd.merge(self.kontrakti_data, self.statistics_data, on='name', how='outer')
-
-    #     # Переименовываем столбцы для новой таблицы
-    #     merged_data.columns = ['name'] + [f'{col}' for col in self.get_column_names('stat', db_name) if col != 'name'] + \
-    #                           [f'{col}' for col in self.get_column_names('contractss', db_name) if col != 'name']
-
-    #     # Сохраняем объединенные данные в новую таблицу
-    #     conn = sqlite3.connect(db_name)
-    #     cursor = conn.cursor()
-    #     cursor.execute("DROP TABLE IF EXISTS Union_table")
-    #     conn.commit()
-    #     merged_data.to_sql('Union_table', conn, if_exists='replace',
-    #                        index=False)  # Если таблица существует, заменяем её
-    #     conn.close()
-    #     # Загружаем данные из новой таблицы в QTableWidget
-    #     self.load_table_from_db('Union_table', db_name)
-
-
     # def create_summary_table():
-    #     
+        
     #     """Создает сводную таблицу, если она еще не существует."""
     #     create_table_sql = """
     #     CREATE TABLE IF NOT EXISTS summary (
@@ -799,16 +801,16 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
     #     conn.commit()
 
     # def replace_buttons_for_filter(self,flag):
-    #     if flag:
-    #         self.button_layout.addWidget(self.FilterButton)
-    #         self.button_layout.removeWidget(self.EditButton)
-    #         self.button_layout.removeWidget(self.AddButton)
-    #         self.button_layout.removeWidget(self.DeleteButton)
-    #     else:
-    #         self.button_layout.removeWidget(self.FilterButton)
-    #         self.button_layout.addWidget(self.EditButton)
-    #         self.button_layout.addWidget(self.AddButton)
-    #         self.button_layout.addWidget(self.DeleteButton)
+        if flag:
+            self.button_layout.addWidget(self.FilterButton)
+            self.button_layout.removeWidget(self.EditButton)
+            self.button_layout.removeWidget(self.AddButton)
+            self.button_layout.removeWidget(self.DeleteButton)
+        else:
+            self.button_layout.removeWidget(self.FilterButton)
+            self.button_layout.addWidget(self.EditButton)
+            self.button_layout.addWidget(self.AddButton)
+            self.button_layout.addWidget(self.DeleteButton)
 
     def update_summary_table(self,db_name):
         # self.replace_buttons_for_filter(True)
@@ -944,8 +946,47 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.tableView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Fixed)
         self.tableView.setColumnWidth(0, 250)
 
+
+    def trend_mean_data_to_table(self, data):
+        self.model.clear()
+        # Очищаем предыдущие данные
+        if not data.empty:
+            # Пивотируем данные
+            pivot_data = data.pivot(index='start_date', columns='name', values='xk').fillna('')
+
+            # Устанавливаем заголовки столбцов
+            self.model.setHorizontalHeaderLabels([''] + list(pivot_data.columns))
+
+            for row_index, (index, row_data) in enumerate(pivot_data.iterrows()):
+                items = [QStandardItem(str(index))] + [QStandardItem(str(item)) for item in row_data]
+
+                for col_index, item in enumerate(items[1:], start=1):  # Пропускаем первый элемент, если это индекс
+                    # Получаем значение из row_data
+                    value = row_data.iloc[col_index - 1]
+                    
+                    # Получаем цвет
+                    color_series = data.loc[
+                        (data['start_date'] == index) & 
+                        (data['name'] == pivot_data.columns[col_index - 1]), 
+                        'xk'
+                    ]
+
+                    if not color_series.empty:
+                        color = color_series.values[0][-1] 
+                        print(color) # Получаем цвет
+                        if color == 'green':
+                            item.setBackground(QColor('green'))
+                        elif color == 'red':
+                            item.setBackground(QColor('red'))
+
+            self.model.insertRow(row_index, items)
+            self.tableView.setModel(self.model)
+            self.tableView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Fixed)
+            self.tableView.setColumnWidth(0, 250)
+
     def mean_data_to_table(self, data):
-        self.model.clear()  # Очищаем предыдущие данные
+        self.model.clear() 
+         # Очищаем предыдущие данные
         if not data.empty:
         # Пивотируем данные
             pivot_data = data.pivot(index='start_date', columns='name', values='xk').fillna('')
@@ -953,9 +994,15 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
             # Устанавливаем заголовки столбцов
             self.model.setHorizontalHeaderLabels([''] + list(pivot_data.columns))
 
-            # Заполняем модель данными
+           
             for row_index, (index, row_data) in enumerate(pivot_data.iterrows()):
                 items = [QStandardItem(str(index))] + [QStandardItem(str(item)) for item in row_data]
+                # for item in items[1:]:  # Пропускаем первый элемент, если это индекс
+                #     value = float(item.text())
+                #     if value > 0:
+                #         item.setBackground(QColor('green'))
+                #     else:
+                #         item.setBackground(QColor('red'))
                 self.model.insertRow(row_index, items)
         # if not data.empty:
         #     # Устанавливаем заголовки столбцов
@@ -972,6 +1019,8 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         # column_width = 200  # Задаем желаемую ширину
         # for column in range(self.model.columnCount()):
         #     self.tableView.setColumnWidth(column, column_width)
+        
+        
         self.tableView.setModel(self.model)
         self.tableView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Fixed)
         self.tableView.setColumnWidth(0, 250)
@@ -1093,7 +1142,7 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
             results.append(
                 pd.DataFrame({
                 'name': name, 
-                'start_date': ['минимум','максимум','сренднее','дисперсия'],
+                'start_date': ['минимум','максимум','среднее','дисперсия'],
                 'xk': self.calculate_stats(xks)
             }))
         
@@ -1103,6 +1152,166 @@ class MainWindow(QtWidgets.QMainWindow, MainForm.Ui_MainWindow):
         self.toggleButtons(True)
         print(result_df)
         self.mean_data_to_table(result_df)
+
+    def trend_calculate_stats(self, lst):
+    # Убираем None из списка
+        filtered_lst = [x for x in lst if x is not None]
+        
+        if not filtered_lst:
+            return None, None, None, None, None
+        
+        # Вычисляем минимальное и максимальное значения
+        min_val = round(min(filtered_lst), 2)
+        max_val = round(max(filtered_lst), 2)
+        
+        # Вычисляем среднее значение
+        mean_val = round((sum(filtered_lst) / len(filtered_lst)), 2)
+        
+        # Вычисляем дисперсию
+        variance = sum((x - mean_val) ** 2 for x in filtered_lst) / len(filtered_lst)
+        
+        # Определяем цвет
+        
+        if mean_val < filtered_lst[-1]:
+            color = "green"
+        else:
+            color = "red"
+        
+        return [min_val, max_val, mean_val, round(variance, 2), color]
+
+    def trend_update_mean_table(self):
+        db_name = 'Subd2.db'
+        date_up = self.mean_date_for_trend
+        date_trend = self.get_trend_date()  # Assuming you have a method to get this date
+        print(date_up)
+        date_x = self.convert_to_pd_date(date_up)
+        date_trend_x = self.convert_to_pd_date(date_trend)
+
+        self.only_update_summary_table(db_name)
+
+        conn = sqlite3.connect(db_name)
+        
+        # Загружаем данные из таблицы
+        query = "SELECT name, start_date, day_end, exec_date, price FROM summary"
+        df = pd.read_sql_query(query, conn)
+        
+        conn.close()
+
+        df['start_date'] = df['start_date'].apply(self.convert_date_for_analyze)
+        df_up = df[df['start_date'] < date_trend_x]
+        df_up['day_end'] = df['day_end'].apply(self.convert_date_for_analyze)
+        df_up['exec_date'] = df['exec_date'].apply(self.convert_date_for_analyze)
+        
+        # Группируем данные по названию фьючерса
+        grouped = df_up.groupby('name')
+        
+        # Создаем список для хранения результатов
+        results = []
+
+        for name, group in grouped:
+            # Сортируем по дате торгов
+            group = group.sort_values('start_date')
+            # Рассчитываем rk(i) и xk(i)
+            rks = []
+            xks = []
+            
+            for i in range(len(group)):
+                Tnk = group.iloc[i]['day_end']
+                Tik = group.iloc[i]['exec_date']
+                Tr = (Tik - Tnk).days
+                Fk = group.iloc[i]['price']
+                rk = log(Fk / 100) / Tr
+                rks.append(rk)
+                if i < 1:
+                    xks.append(None)
+                else:
+                    xk = round(log(rk / rks[i-2]), 2)
+                    xks.append(xk)
+            
+            # Найти xk на дату date_trend
+            # xk_on_date_trend = None
+            # if not group[group['start_date'] == date_trend_x].empty:
+            
+            # Добавляем результаты в список
+            results.append(
+                pd.DataFrame({
+                    'name': name, 
+                    'start_date': ['минимум', 'максимум', 'среднее', 'дисперсия', 'тренд'],
+                    'xk': self.trend_calculate_stats(xks)
+                })
+            )
+        
+        # Объединяем результаты в один DataFrame
+        result_df = pd.concat(results)
+        self.formWidget.reject()
+        self.toggleButtons(True)
+        print(result_df)
+        self.mean_data_to_table(result_df)
+
+    def update_mean_table_trend(self):
+        # db_name = 'Subd2.db'
+        #     # date_up = "01-Сен-96"
+        # date_up = self.get_t_trend_date()
+        # print(date_up)
+        #     # date_x = self.convert_date_for_analyze(date_up)
+        # date_x = self.convert_to_pd_date(date_up)
+
+        # self.only_update_summary_table(db_name)
+
+        # conn = sqlite3.connect(db_name)
+            
+        #     # Загружаем данные из таблицы
+        # query = "SELECT name, start_date, day_end, exec_date, price FROM summary"
+        # df = pd.read_sql_query(query, conn)
+            
+        # conn.close()
+
+        # df['start_date'] = df['start_date'].apply(self.convert_date_for_analyze)
+        # df_up = df[df['start_date'] < date_x]
+        # df_up['day_end'] = df['day_end'].apply(self.convert_date_for_analyze)
+        # df_up['exec_date'] = df['exec_date'].apply(self.convert_date_for_analyze)
+            
+        #     # Группируем данные по названию фьючерса
+        # grouped = df_up.groupby('name')
+        
+        # # Создаем список для хранения результатов
+        # results = []
+
+        # for name, group in grouped:
+        #     # Сортируем по дате торгов
+        #     group = group.sort_values('start_date')
+        #     # Рассчитываем rk(i) и xk(i)
+        #     rks = []
+        #     xks = []
+            
+        #     for i in range(len(group)):
+        #         Tnk = group.iloc[i]['day_end']
+        #         Tik = group.iloc[i]['exec_date']
+        #         Tr = (Tik - Tnk).days
+        #         Fk = group.iloc[i]['price']
+        #         rk = log(Fk / 100) / Tr
+        #         rks.append(rk)
+        #         if i < 1:
+        #             xks.append(None)
+        #         else:
+        #             xk = round(log(rk / rks[i-2]), 2)
+        #             xks.append(xk)
+            
+        #     # Добавляем результаты в список
+        #     results.append(
+        #         pd.DataFrame({
+        #         'name': name, 
+        #         'start_date': ['минимум','максимум','сренднее','дисперсия'],
+        #         'xk': self.calculate_stats(xks)
+        #     }))
+        
+        # # Объединяем результаты в один DataFrame
+        # result_df = pd.concat(results)
+        # self.formWidget.reject()
+        # self.toggleButtons(True)
+        # print(result_df)
+        # self.mean_data_to_table(result_df)
+        pass
 
     def update_analyze_table(self, db_name):
     # Подключаемся к базе данных
